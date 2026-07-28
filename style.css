@@ -501,3 +501,32 @@ body.light .toast { background: rgba(255, 255, 255, 0.97); color: #333; box-shad
 @keyframes toast-out {
     to { opacity: 0; transform: translateY(-20px); }
 }
+/* === ФИКС РАЗМЕРОВ КНОПОК (Добавить в самый конец style.css) === */
+
+/* 1. Для ПК и планшетов: делаем кнопки VL и ↻ большими (как кнопка профиля) */
+@media (min-width: 481px) {
+  .vl-worship-btn,
+  .btn-refresh-round {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 22px !important;
+  }
+}
+
+/* 2. Для телефонов (≤ 480px): ↻ и VL маленькие, а тема (🌙/☀️) большая */
+@media (max-width: 480px) {
+  /* Кнопка смены темы остается большой, как кнопка профиля */
+  .theme-toggle {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 22px !important;
+  }
+  
+  /* Кнопки VL и ↻ делаем маленькими */
+  .vl-worship-btn,
+  .btn-refresh-round {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 13px !important;
+  }
+}
