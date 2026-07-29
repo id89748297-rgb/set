@@ -199,6 +199,7 @@ if (!pendingSetlistAction) return;
 const sl = setlists.find(x => x.id === pendingSetlistAction.id);
 if (sl) {
 sl.isArchived = true;
+if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = true; }
 saveToStorage();
 syncSetlistIfTeam(sl);
 if (!document.getElementById('page-setlist-detail').classList.contains('active')) {
@@ -215,6 +216,7 @@ const sl = setlists.find(x => x.id === pendingSetlistAction.id);
 const teamId = sl ? sl.teamId : null;
 const wasOnDetailPage = document.getElementById('page-setlist-detail').classList.contains('active');
 setlists = setlists.filter(x => x.id !== pendingSetlistAction.id);
+if (teamId && teamDataCache[teamId]) { teamDataCache[teamId].setlists = (teamDataCache[teamId].setlists || []).filter(s => s.id !== pendingSetlistAction.id); }
 saveToStorage();
 if (teamId) removeSetlistFromTeamData(pendingSetlistAction.id, teamId);
  
@@ -244,6 +246,7 @@ if (!pendingSetlistAction) return;
 const sl = setlists.find(x => x.id === pendingSetlistAction.id);
 if (sl) {
 sl.isArchived = false;
+if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = false; }
 saveToStorage();
 syncSetlistIfTeam(sl);
 renderSetlists();
@@ -252,7 +255,7 @@ if (sl.teamId) showTeamDetailView(sl.teamId);
 closeModal('modal-archive-setlist');
 pendingSetlistAction = null;
 }
-function archiveCurrentSetlist() { const sl = setlists.find(x => x.id === currentSlId); if (!sl) return; if (confirm(`Отправить "${sl.name}" в архив?`)) { sl.isArchived = true; saveToStorage(); syncSetlistIfTeam(sl); goBackFromSetlistDetail(); } }
+function archiveCurrentSetlist() { const sl = setlists.find(x => x.id === currentSlId); if (!sl) return; if (confirm(`Отправить "${sl.name}" в архив?`)) { sl.isArchived = true; if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = true; } saveToStorage(); syncSetlistIfTeam(sl); goBackFromSetlistDetail(); } }
 function openSetlistDetail(id) { currentSlId = id; const sl = setlists.find(x => x.id === id); document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${sl.name}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`; document.getElementById('sl-subtitle').innerText = 'Сет-лист'; renderSlSongs(); showPage('page-setlist-detail'); }
 function goBackFromSetlistDetail() {
 const sl = setlists.find(x => x.id === currentSlId);

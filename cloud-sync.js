@@ -26,11 +26,15 @@ async function loadUserDataFromCloud() {
                 localStorage.setItem('clc_songs', JSON.stringify(songs));
                 updated = true;
             }
-            if (data.setlists && JSON.stringify(data.setlists) !== JSON.stringify(setlists)) {
-                setlists = data.setlists;
-                localStorage.setItem('clc_setlists', JSON.stringify(setlists));
-                updated = true;
-            }
+if (data.setlists) {
+    const teamSetlists = setlists.filter(sl => sl.fromTeamSync);
+    const personalLocal = setlists.filter(sl => !sl.fromTeamSync);
+    if (JSON.stringify(data.setlists) !== JSON.stringify(personalLocal)) {
+        setlists = [...data.setlists, ...teamSetlists];
+        localStorage.setItem('clc_setlists', JSON.stringify(setlists));
+        updated = true;
+    }
+}
            if (data.teams && mergeTeamsFromCloud(data.teams)) {
                 localStorage.setItem('clc_teams', JSON.stringify(teams));
                 updated = true;
@@ -108,9 +112,14 @@ function startCloudSync() {
                 if (data.songs && JSON.stringify(data.songs) !== JSON.stringify(songs)) {
                     songs = data.songs; needsRender = true;
                 }
-                if (data.setlists && JSON.stringify(data.setlists) !== JSON.stringify(setlists)) {
-                    setlists = data.setlists; needsRender = true;
-                }
+if (data.setlists) {
+    const teamSetlists = setlists.filter(sl => sl.fromTeamSync);
+    const personalLocal = setlists.filter(sl => !sl.fromTeamSync);
+    if (JSON.stringify(data.setlists) !== JSON.stringify(personalLocal)) {
+        setlists = [...data.setlists, ...teamSetlists];
+        needsRender = true;
+    }
+}
                if (data.teams && mergeTeamsFromCloud(data.teams)) {
                     needsRender = true;
                 }
