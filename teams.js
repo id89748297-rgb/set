@@ -40,6 +40,7 @@ ${avatarHtml}
 </div>
 </div>
 <div class="item-actions" style="display: flex; gap: 4px;">
+<button class="btn-icon" onclick="event.stopPropagation(); openTeamMembers('${t.id}')" title="Участники">👥</button>
 <button class="btn-icon" onclick="event.stopPropagation(); showTeamInvite('${t.id}')" title="Пригласить">🔗</button>
 <button class="btn-icon" onclick="event.stopPropagation(); editTeam('${t.id}')" title="Изменить">✏️</button>
 <button class="btn-icon" onclick="event.stopPropagation(); deleteTeam('${t.id}')" title="Удалить" style="color: #ef5350;">🗑️</button>
@@ -132,6 +133,7 @@ startTeamDataListener(id);
 if (db && currentUser) db.collection('teamRegistry').doc(id).set({ name: newName, password: newPassword, avatar: avatarData || null, createdBy: currentUser.uid, createdAt: newTeam.createdAt, members: [currentUser.uid] }).catch(err => console.error('teamRegistry sync failed:', err));
 }
 saveToStorage();
+syncPublicProfileToTeams();
 closeModal('modal-team-edit');
 renderCarousel();
 showTeamsView();
@@ -306,6 +308,7 @@ joinedByLink: true
 teams.push(newTeam);
 startTeamDataListener(teamId);
 saveToStorage();
+syncPublicProfileToTeams();
 closeModal('modal-join-team-link');
 renderCarousel();
 showTeamsView();
@@ -416,8 +419,8 @@ const dateColorBase = isLight ? '#7e57c2' : '#9575cd';
 let html = `<div style="padding: 10px 0;">
 <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:15px;">
 <button class="btn-pastel" style="margin:0;" onclick="openSetlistModalForTeam('${team.id}')">➕ Сет-лист</button>
+<button class="btn-pastel" style="margin:0;" onclick="openTeamMembers('${team.id}')">👥 Участники</button>
 <button class="btn-pastel" style="margin:0;" onclick="showTeamInvite('${team.id}')">🔗 Пригласить</button>
-<button class="btn-pastel" style="margin:0;" onclick="showTeamsView()">← Назад</button>
 </div>`;
 html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;">`;
 html += `<button class="btn-pastel" style="margin:0;${!isArchiveMode ? 'background:rgba(179,157,219,0.35);font-weight:bold;' : 'opacity:0.6;'}" onclick="toggleTeamArchive('${team.id}')">Актуальные (${activeSetlists.length})</button>`;

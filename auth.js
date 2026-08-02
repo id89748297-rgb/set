@@ -29,8 +29,9 @@ auth.onAuthStateChanged(async (user) => {
         // ✅ ЗАГРУЖАЕМ ОБЛАЧНЫЕ ДАННЫЕ В ФОНЕ (не блокируя UI)
         showToast('↻ Синхронизация данных...', 'info');
         loadUserDataFromCloud().then(() => {
-            showToast('✅ Данные синхронизированы', 'success');
-        }).catch(err => {
+            showToast('✅ Данные синхронизированы', 'success');
+            syncPublicProfileToTeams();
+        }).catch(err => {
             console.error('Ошибка синхронизации:', err);
             showToast('⚠️ Ошибка синхронизации. Данные загружены локально.', 'error');
         });

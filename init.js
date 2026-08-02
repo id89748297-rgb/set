@@ -74,9 +74,11 @@ birthDate: birthDate,
 country: country,
 city: city,
 aboutMe: about,
+aboutMe: about,
 updatedAt: firebase.firestore.FieldValue.serverTimestamp()
 }, { merge: true });
-
+ 
+syncPublicProfileToTeams();
 alert('✅ Все изменения сохранены!');
 renderProfile(); // Перерисовываем профиль
 } catch (error) {

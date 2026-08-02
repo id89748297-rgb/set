@@ -214,9 +214,9 @@ function saveCroppedAvatar() {
 function saveAvatarToStorage(dataUrl) {
     if (!currentUser) return;
     localStorage.setItem('clc_avatar_' + currentUser.uid, dataUrl);
-    db.collection('users').doc(currentUser.uid).set({ avatar: dataUrl }, { merge: true })
-    .then(() => { updateAvatarsInUI(dataUrl); })
-    .catch(err => console.error('Ошибка сохранения аватарки:', err));
+db.collection('users').doc(currentUser.uid).set({ avatar: dataUrl }, { merge: true })
+    .then(() => { updateAvatarsInUI(dataUrl); syncPublicProfileToTeams(); })
+    .catch(err => console.error('Ошибка сохранения аватарки:', err));
 }
 
 function updateAvatarsInUI(dataUrl) {

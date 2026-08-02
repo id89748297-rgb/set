@@ -397,6 +397,33 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
     </div>
 </div>
 <div id="modal-share-setlist" class="modal"><div class="modal-content"><h2>📤 Поделиться сет-листом</h2><p style="color: #888; margin-bottom: 15px;">Выберите способ:</p><div style="display: flex; flex-direction: column; gap: 10px;"><button class="btn-main" onclick="exportSetlistAsFile()"> Сохранить файл (.clcsetlist)</button><button class="btn-main" onclick="shareSetlistViaAPI()">📤 Отправить через систему</button><div id="share-to-team-section"></div></div><button class="btn-secondary" style="width: 100%; margin-top: 15px;" onclick="closeModal('modal-share-setlist')">Отмена</button></div></div>
+<!-- === МОДАЛКА: УЧАСТНИКИ КОМАНДЫ === -->
+<div id="modal-team-members" class="modal modal-fullscreen">
+<div class="modal-content modal-content-full">
+<div class="team-members-header">
+<div id="team-members-avatar" class="team-members-header-avatar">🎸</div>
+<h2 id="team-members-name" style="margin:0;flex:1;"></h2>
+<button class="btn-icon" onclick="closeTeamMembers()">✕</button>
+</div>
+<input type="text" id="team-members-search" class="search-box" placeholder="🔍 Поиск участника..." oninput="renderTeamMembersList()">
+<div id="team-members-list"></div>
+</div>
+</div>
+ 
+<!-- === МОДАЛКА: ПРОФИЛЬ УЧАСТНИКА === -->
+<div id="modal-member-profile" class="modal" style="z-index: 1100;">
+<div class="modal-content" style="text-align:center;">
+<div id="member-profile-avatar" class="member-profile-avatar">👤</div>
+<h2 id="member-profile-name" style="margin:10px 0 15px;"></h2>
+<div id="member-profile-details" style="text-align:left;"></div>
+<button class="btn-secondary" style="width:100%;margin-top:15px;" onclick="closeModal('modal-member-profile')">Закрыть</button>
+</div>
+</div>
+ 
+<!-- === МОДАЛКА: ФОТО НА ВЕСЬ ЭКРАН === -->
+<div id="modal-photo-view" class="modal" style="z-index: 1200;background:rgba(0,0,0,0.95);" onclick="closeModal('modal-photo-view')">
+<img id="photo-view-img" src="" alt="" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px;">
+</div>
 <script src="auth.js"></script>
 <script src="cloud-sync.js"></script>
 <script src="state-utils.js"></script>
@@ -408,6 +435,7 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 <script src="song-view.js"></script>
 <script src="export-import.js"></script>
 <script src="profile.js"></script>
+<script src="team-members.js"></script>
 <script src="init.js"></script>
 </body>
 </html>

@@ -530,3 +530,15 @@ body.light .toast { background: rgba(255, 255, 255, 0.97); color: #333; box-shad
     font-size: 13px !important;
   }
 }
+.modal-fullscreen { align-items: stretch; }
+.modal-content-full { width: 100%; height: 100%; max-width: 100%; max-height: 100%; border-radius: 0; display: flex; flex-direction: column; overflow-y: auto; }
+.team-members-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+.team-members-header-avatar { width: 48px; height: 48px; border-radius: 12px; background: #9575cd; display: flex; align-items: center; justify-content: center; font-size: 22px; overflow: hidden; flex-shrink: 0; }
+.team-members-header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.team-member-avatar, .team-member-avatar-placeholder { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #9575cd; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.member-profile-avatar { width: 120px; height: 120px; border-radius: 50%; background: #9575cd; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 48px; overflow: hidden; }
+.member-profile-avatar img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; }
+.member-profile-row { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid #333; }
+body.light .member-profile-row { border-bottom-color: #eee; }
+.member-profile-label { color: #888; font-size: 13px; }
+.member-profile-value { font-weight: bold; text-align: right; }
