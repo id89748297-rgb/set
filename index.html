@@ -70,6 +70,31 @@
       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
     </svg>
   </button>
+<script>
+  // Мгновенно показываем кнопку профиля и фото из кэша, не дожидаясь ответа
+  // Firebase (тот приходит асинхронно и даёт заметную заминку на обновлении
+  // страницы). Если окажется, что пользователь всё-таки не залогинен,
+  // auth.js скорректирует UI обратно за долю секунды.
+  (function() {
+    try {
+      var uid = localStorage.getItem('clc_current_uid');
+      if (!uid) return;
+      var btn = document.getElementById('profile-btn');
+      if (!btn) return;
+      btn.style.display = 'flex';
+      var avatar = localStorage.getItem('clc_avatar_' + uid);
+      if (avatar) {
+        var btnAvatar = document.getElementById('profile-btn-avatar');
+        var btnIcon = document.getElementById('profile-btn-icon');
+        if (btnAvatar && btnIcon) {
+          btnAvatar.src = avatar;
+          btnAvatar.style.display = 'block';
+          btnIcon.style.display = 'none';
+        }
+      }
+    } catch (e) {}
+  })();
+  </script>
   <button class="vl-worship-btn" onclick="showInstruction(true)" title="Инструкция" style="margin-left: 4px;">VL</button>
 </div>
 <div class="header-center">

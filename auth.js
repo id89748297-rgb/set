@@ -9,18 +9,20 @@ auth.onAuthStateChanged(async (user) => {
 
     if (user) {
         // ✅ ПРОВЕРКА: Почта должна быть подтверждена
-        if (!user.emailVerified) {
-            currentUser = null;
-            if (profileBtn) profileBtn.style.display = 'none';
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+       if (!user.emailVerified) {
+            currentUser = null;
+            localStorage.removeItem('clc_current_uid');
+            if (profileBtn) profileBtn.style.display = 'none';
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             if (authPage) authPage.classList.add('active');
             showAuthError(`⚠️ Почта не подтверждена! Проверьте ящик ${user.email}.`);
             return;
         }
 
-        currentUser = user;
-        console.log('✅ Авторизован:', user.email);
-        if (profileBtn) profileBtn.style.display = 'flex';
+       currentUser = user;
+localStorage.setItem('clc_current_uid', user.uid);
+console.log('✅ Авторизован:', user.email);
+if (profileBtn) profileBtn.style.display = 'flex';
 
         // ✅ СНАЧАЛА ПОКАЗЫВАЕМ ГЛАВНЮ С ЛОКАЛЬНЫМИ ДАННЫМИ (мгновенно!)
         showPage('page-home');
@@ -43,9 +45,10 @@ auth.onAuthStateChanged(async (user) => {
         registerSession();
 
     } else {
-        currentUser = null;
-        console.log('❌ Не авторизован');
-        if (profileBtn) profileBtn.style.display = 'none';
+        currentUser = null;
+        localStorage.removeItem('clc_current_uid');
+        console.log('❌ Не авторизован');
+        if (profileBtn) profileBtn.style.display = 'none';
         resetAvatarsInUI();
         stopCloudSync();
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
