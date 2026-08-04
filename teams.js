@@ -116,7 +116,11 @@ if (team) {
 team.name = newName;
 team.password = newPassword;
 if (avatarData !== undefined) team.avatar = avatarData;
-if (db && currentUser) db.collection('teamRegistry').doc(team.id).set({ name: newName, password: newPassword, avatar: avatarData !== undefined ? avatarData : (team.avatar || null), createdAt: team.createdAt || Date.now(), members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }, { merge: true }).catch(err => console.error('teamRegistry sync failed:', err));
+if (db && currentUser) {
+db.collection('teamRegistry').doc(team.id).collection('members').doc(currentUser.uid).set({ joinedAt: Date.now() }, { merge: true })
+.then(() => db.collection('teamRegistry').doc(team.id).set({ name: newName, password: newPassword, avatar: avatarData !== undefined ? avatarData : (team.avatar || null), createdAt: team.createdAt || Date.now(), members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }, { merge: true }))
+.catch(err => console.error('teamRegistry sync failed:', err));
+}
 }
 } else {
 const id = 'team_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -130,7 +134,11 @@ createdAt: Date.now()
 };
 teams.push(newTeam);
 startTeamDataListener(id);
-if (db && currentUser) db.collection('teamRegistry').doc(id).set({ name: newName, password: newPassword, avatar: avatarData || null, createdBy: currentUser.uid, createdAt: newTeam.createdAt, members: [currentUser.uid] }).catch(err => console.error('teamRegistry sync failed:', err));
+if (db && currentUser) {
+db.collection('teamRegistry').doc(id).set({ name: newName, password: newPassword, avatar: avatarData || null, createdBy: currentUser.uid, createdAt: newTeam.createdAt, members: [currentUser.uid] })
+.then(() => db.collection('teamRegistry').doc(id).collection('members').doc(currentUser.uid).set({ joinedAt: Date.now() }))
+.catch(err => console.error('teamRegistry sync failed:', err));
+}
 }
 saveToStorage();
 syncPublicProfileToTeams();
@@ -188,7 +196,10 @@ teams = teams.filter(t => t.id !== teamId);
 if (teamListenerUnsubs[teamId]) { teamListenerUnsubs[teamId](); delete teamListenerUnsubs[teamId]; }
 if (teamRegistryListenerUnsubs[teamId]) { teamRegistryListenerUnsubs[teamId](); delete teamRegistryListenerUnsubs[teamId]; }
 delete teamDataCache[teamId];
-if (db && currentUser) db.collection('teamRegistry').doc(teamId).update({ members: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) }).catch(err => console.error('Не удалось убрать себя из участников:', err));
+if (db && currentUser) {
+db.collection('teamRegistry').doc(teamId).update({ members: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) }).catch(err => console.error('Не удалось убрать себя из участников:', err));
+db.collection('teamRegistry').doc(teamId).collection('members').doc(currentUser.uid).delete().catch(err => console.error('Не удалось удалить пропуск участника:', err));
+}
 saveToStorage();
 renderCarousel();
 currentHomeView = 'teams';
@@ -292,9 +303,13 @@ return;
 }
 const updatedMembers = Array.from(new Set([...(registry.members || []), registry.createdBy, currentUser.uid].filter(Boolean)));
 try {
+// Сначала — свой документ-пропуск (это и есть настоящее «вступление»),
+// потом — обновление массива members для обратной совместимости со счётчиком в UI.
+await db.collection('teamRegistry').doc(teamId).collection('members').doc(currentUser.uid).set({ joinedAt: Date.now() });
 await db.collection('teamRegistry').doc(teamId).update({ members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
 } catch (err) {
 console.error('Не удалось зарегистрировать участие:', err);
+alert('⚠️ Вступление сохранено локально, но не синхронизировалось с облаком: ' + err.message);
 }
 const newTeam = {
 id: teamId,
@@ -315,8 +330,8 @@ showTeamsView();
 alert(`✅ Вы присоединились к команде «${registry.name}»!`);
 }
 function openSetlistModalForTeam(teamId) {
-document.getElementById('sl-date').value = getCurrentDate();
-document.getElementById('sl-time').value = getCurrentTime();
+document.getElementById('sl-date').value = getNextSundayDate();
+document.getElementById('sl-time').value = '11:00';
 document.getElementById('sl-name').value = '';
 document.getElementById('modal-setlist').dataset.teamId = teamId;
 document.getElementById('modal-setlist').classList.add('show');
@@ -348,7 +363,12 @@ if (!data) return;
 songs = songs.filter(s => s.fromTeam !== teamId);
 const cacheIds = new Set((data.setlists || []).map(s => s.id));
 setlists = setlists.filter(sl => !(sl.teamId === teamId && (sl.fromTeamSync || cacheIds.has(sl.id))));
-(data.songs || []).forEach(s => songs.push({ ...s, fromTeam: teamId }));
+(data.songs || []).forEach(s => {
+songs.push({ ...s, fromTeam: teamId });
+// Комментарии команды для этой песни — общие, приходят вместе с песней
+if (data.sectionNotes && data.sectionNotes[s.id]) sectionNotes[s.id] = data.sectionNotes[s.id];
+if (data.inlineComments && data.inlineComments[s.id]) inlineComments[s.id] = data.inlineComments[s.id];
+});
 (data.setlists || []).forEach(sl => setlists.push({ ...sl, teamId: teamId, fromTeamSync: true }));
 }
 function applyAllTeamOverlays() {
@@ -529,6 +549,13 @@ if (err.name === 'AbortError') return;
 }
 downloadJson(fileData, filename);
 }
+// Личные настройки отображения — не отправляются в команду, у каждого участника свои
+const TEAM_SYNC_EXCLUDE_FIELDS = ['capo', 'fontSize', 'columns', 'accidental', 'hideChords', 'hideLyrics', 'hideArrows', 'hideComments'];
+function stripPersonalSettingsForTeam(item) {
+    const clean = { ...item };
+    TEAM_SYNC_EXCLUDE_FIELDS.forEach(f => delete clean[f]);
+    return clean;
+}
 async function publishSetlistToTeamData(sl, teamId) {
     if (!db || !currentUser) return false;
     const songsToShare = sl.songs.map(item => {
@@ -539,21 +566,26 @@ async function publishSetlistToTeamData(sl, teamId) {
     let assignedId = null;
     await db.runTransaction(async (tx) => {
         const doc = await tx.get(docRef);
-        const data = doc.exists ? doc.data() : { songs: [], setlists: [] };
+        const data = doc.exists ? doc.data() : { songs: [], setlists: [], sectionNotes: {}, inlineComments: {} };
         const teamSongs = data.songs || [];
         const teamSetlists = data.setlists || [];
+        const teamSectionNotes = data.sectionNotes || {};
+        const teamInlineComments = data.inlineComments || {};
         songsToShare.forEach(s => {
             const idx = teamSongs.findIndex(ts => ts.id === s.id);
             if (idx !== -1) teamSongs[idx] = s; else teamSongs.push(s);
+            // Комментарии (под секциями и инлайн) — тоже общие для команды, идут вместе с песней
+            if (sectionNotes[s.id] && Object.keys(sectionNotes[s.id]).length) teamSectionNotes[s.id] = sectionNotes[s.id];
+            if (inlineComments[s.id] && Object.keys(inlineComments[s.id]).length) teamInlineComments[s.id] = inlineComments[s.id];
         });
         let existingIdx = teamSetlists.findIndex(ts => ts.id === sl.id);
         if (existingIdx === -1) {
             existingIdx = teamSetlists.findIndex(ts => ts.name.toLowerCase() === sl.name.toLowerCase() && ts.date === sl.date);
         }
-        const sharedSetlist = { id: existingIdx !== -1 ? teamSetlists[existingIdx].id : sl.id, date: sl.date, time: sl.time || '', name: sl.name, isArchived: !!sl.isArchived, sharedBy: currentUser.uid, sharedAt: Date.now(), songs: sl.songs.map(item => ({ ...item })) };
+        const sharedSetlist = { id: existingIdx !== -1 ? teamSetlists[existingIdx].id : sl.id, date: sl.date, time: sl.time || '', name: sl.name, isArchived: !!sl.isArchived, sharedBy: currentUser.uid, sharedAt: Date.now(), songs: sl.songs.map(item => stripPersonalSettingsForTeam(item)) };
         if (existingIdx !== -1) teamSetlists[existingIdx] = sharedSetlist; else teamSetlists.push(sharedSetlist);
         assignedId = sharedSetlist.id;
-        tx.set(docRef, { songs: teamSongs, setlists: teamSetlists, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
+        tx.set(docRef, { songs: teamSongs, setlists: teamSetlists, sectionNotes: teamSectionNotes, inlineComments: teamInlineComments, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
     });
     if (assignedId !== null && assignedId !== sl.id) sl.id = assignedId;
     sl.sharedToTeams = sl.sharedToTeams || [];
@@ -561,36 +593,36 @@ async function publishSetlistToTeamData(sl, teamId) {
     return true;
 }
 async function removeSetlistFromTeamData(setlistId, teamId) {
-    if (!db || !currentUser || !teamId) return;
-    const docRef = db.collection('teamData').doc(teamId);
-    try {
-        await db.runTransaction(async (tx) => {
-            const doc = await tx.get(docRef);
-            if (!doc.exists) return;
-            const data = doc.data();
-            const teamSetlists = (data.setlists || []).filter(ts => ts.id !== setlistId);
-            tx.update(docRef, { setlists: teamSetlists, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
-        });
-    } catch (err) { console.error('Team delete sync error:', err); }
+    if (!db || !currentUser || !teamId) return;
+    const docRef = db.collection('teamData').doc(teamId);
+    try {
+        await db.runTransaction(async (tx) => {
+            const doc = await tx.get(docRef);
+            if (!doc.exists) return;
+            const data = doc.data();
+            const teamSetlists = (data.setlists || []).filter(ts => ts.id !== setlistId);
+            tx.update(docRef, { setlists: teamSetlists, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
+        });
+    } catch (err) { console.error('Team delete sync error:', err); }
 }
 function syncSetlistIfTeam(sl) {
-    if (sl && sl.teamId) {
-        publishSetlistToTeamData(sl, sl.teamId).catch(err => console.error('Team sync error:', err));
-    }
+    if (sl && sl.teamId) {
+        publishSetlistToTeamData(sl, sl.teamId).catch(err => console.error('Team sync error:', err));
+    }
 }
 async function shareSetlistToTeam(setlistId, teamId) {
-    const sl = setlists.find(x => x.id === setlistId);
-    const team = teams.find(t => t.id === teamId);
-    if (!sl || !team) return;
-    if (!confirm(`Отправить сет-лист «${sl.name}» в команду «${team.name}»?`)) return;
-    if (!db || !currentUser) { alert('❌ Нет подключения к облаку'); return; }
-    try {
-        await publishSetlistToTeamData(sl, teamId);
-        saveToStorage();
-        closeModal('modal-share-setlist');
-        renderSetlists();
-        alert(`✅ Сет-лист «${sl.name}» отправлен в команду «${team.name}»!\nОн появится у всех участников автоматически.`);
-    } catch (err) {
-        alert('❌ Не удалось отправить сет-лист: ' + err.message);
-    }
+    const sl = setlists.find(x => x.id === setlistId);
+    const team = teams.find(t => t.id === teamId);
+    if (!sl || !team) return;
+    if (!confirm(`Отправить сет-лист «${sl.name}» в команду «${team.name}»?`)) return;
+    if (!db || !currentUser) { alert('❌ Нет подключения к облаку'); return; }
+    try {
+        await publishSetlistToTeamData(sl, teamId);
+        saveToStorage();
+        closeModal('modal-share-setlist');
+        renderSetlists();
+        alert(`✅ Сет-лист «${sl.name}» отправлен в команду «${team.name}»!\nОн появится у всех участников автоматически.`);
+    } catch (err) {
+        alert('❌ Не удалось отправить сет-лист: ' + err.message);
+    }
 }

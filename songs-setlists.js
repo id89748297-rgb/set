@@ -40,17 +40,17 @@ function saveAppState() { const activePage = document.querySelector('.page.activ
 function saveDefaultSettings() { localStorage.setItem('clc_defaults', JSON.stringify({ fontSize, columns: currentColumns })); }
 function toggleColorTheme() { if (document.body.classList.contains('violet')) { document.body.classList.remove('violet'); localStorage.setItem('clc_color', 'blue'); } else { document.body.classList.add('violet'); localStorage.setItem('clc_color', 'violet'); } }
 function showPage(id) {
-    // ✅ СКРЫВАЕМ ВСЕ СТРАНИЦЫ ПЕРЕД ПОКАЗОМ НОВОЙ
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    const targetPage = document.getElementById(id);
-    if (targetPage) {
-        targetPage.classList.add('active');
-    }
-    if(id === 'page-home') {
-        activateCarouselItem(carouselActiveIndex);
-    }
-    window.scrollTo(0, 0);
-    saveAppState();
+    // ✅ СКРЫВАЕМ ВСЕ СТРАНИЦЫ ПЕРЕД ПОКАЗОМ НОВОЙ
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    const targetPage = document.getElementById(id);
+    if (targetPage) {
+        targetPage.classList.add('active');
+    }
+    if(id === 'page-home') {
+        activateCarouselItem(carouselActiveIndex);
+    }
+    window.scrollTo(0, 0);
+    saveAppState();
 }
 function showInstruction(show) { if (show) { showPage('page-instruction'); } else { setCarouselIndex(0, true); showPage('page-home'); } }
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
@@ -170,12 +170,12 @@ div.innerHTML = `<div class="item-left ${expiredClass}" style="min-width: 0; fle
 div.onclick = () => clearSetlistSearchAndOpen(sl.id); list.appendChild(div); });
 updateCarouselBadges();
 }
-function openSetlistModal() { document.getElementById('sl-date').value = getCurrentDate(); document.getElementById('sl-time').value = getCurrentTime(); document.getElementById('sl-name').value = ''; document.getElementById('modal-setlist').classList.add('show'); }
+function openSetlistModal() { document.getElementById('sl-date').value = getNextSundayDate(); document.getElementById('sl-time').value = '11:00'; document.getElementById('sl-name').value = ''; document.getElementById('modal-setlist').classList.add('show'); }
 async function saveSetlist() {
     const date = document.getElementById('sl-date').value;
     const time = document.getElementById('sl-time').value;
-    const name = document.getElementById('sl-name').value;
-    if (!name || !date) return;
+    const name = document.getElementById('sl-name').value.trim() || 'Воскресенье';
+    if (!date) { alert('❌ Укажите дату'); return; }
     const newId = getNextId(setlists);
     const teamId = document.getElementById('modal-setlist').dataset.teamId || null;
     const newSl = {id: newId, date, time: time || '', name, isArchived: false, teamId: teamId, songs: []};

@@ -4,27 +4,28 @@ return 'song_' + Date.now().toString(36) + '_' + Math.random().toString(36).subs
 }
 // === ГЕНЕРАЦИЯ УНИКАЛЬНОГО ЧИСЛОВОГО ID ===
 function getNextId(arr) {
-  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
 }
 function formatDate(dateString) { const date = new Date(dateString); const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']; return `${date.getDate()} ${months[date.getMonth()]}`; }
 function formatSetlistDate(dateString, timeString) { let result = formatDate(dateString); if (timeString) result += `, ${timeString}`; return result; }
 function getCurrentDate() { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
+function getNextSundayDate() { const date = new Date(); const day = date.getDay(); const daysUntilSunday = (7 - day) % 7; date.setDate(date.getDate() + daysUntilSunday); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
 function getCurrentTime() { const date = new Date(); return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`; }
 const CATEGORY_LABELS = { fast: '🔥 Б', medium: '🎵 С', slow: '🧎 M' };
 const CATEGORY_ICONS = { fast: '🔥', medium: '🎵', slow: '🧎' };
 const DIATONIC_CHORDS = {
-'C':  [{r:'C',m:false},{r:'D',m:true},{r:'E',m:true},{r:'F',m:false},{r:'G',m:false},{r:'A',m:true},{r:'H',m:true}],
+'C':  [{r:'C',m:false},{r:'D',m:true},{r:'E',m:true},{r:'F',m:false},{r:'G',m:false},{r:'A',m:true},{r:'H',m:true}],
 'C#': [{r:'C#',m:false},{r:'D#',m:true},{r:'F',m:true},{r:'F#',m:false},{r:'G#',m:false},{r:'A#',m:true},{r:'C',m:true}],
-'D':  [{r:'D',m:false},{r:'E',m:true},{r:'F#',m:true},{r:'G',m:false},{r:'A',m:false},{r:'H',m:true},{r:'C#',m:true}],
+'D':  [{r:'D',m:false},{r:'E',m:true},{r:'F#',m:true},{r:'G',m:false},{r:'A',m:false},{r:'H',m:true},{r:'C#',m:true}],
 'D#': [{r:'D#',m:false},{r:'F',m:true},{r:'G',m:true},{r:'G#',m:false},{r:'A#',m:false},{r:'C',m:true},{r:'D',m:true}],
-'E':  [{r:'E',m:false},{r:'F#',m:true},{r:'G#',m:true},{r:'A',m:false},{r:'H',m:false},{r:'C#',m:true},{r:'D#',m:true}],
-'F':  [{r:'F',m:false},{r:'G',m:true},{r:'A',m:true},{r:'A#',m:false},{r:'C',m:false},{r:'D',m:true},{r:'E',m:true}],
+'E':  [{r:'E',m:false},{r:'F#',m:true},{r:'G#',m:true},{r:'A',m:false},{r:'H',m:false},{r:'C#',m:true},{r:'D#',m:true}],
+'F':  [{r:'F',m:false},{r:'G',m:true},{r:'A',m:true},{r:'A#',m:false},{r:'C',m:false},{r:'D',m:true},{r:'E',m:true}],
 'F#': [{r:'F#',m:false},{r:'G#',m:true},{r:'A#',m:true},{r:'H',m:false},{r:'C#',m:false},{r:'D#',m:true},{r:'F',m:true}],
-'G':  [{r:'G',m:false},{r:'A',m:true},{r:'H',m:true},{r:'C',m:false},{r:'D',m:false},{r:'E',m:true},{r:'F#',m:true}],
+'G':  [{r:'G',m:false},{r:'A',m:true},{r:'H',m:true},{r:'C',m:false},{r:'D',m:false},{r:'E',m:true},{r:'F#',m:true}],
 'G#': [{r:'G#',m:false},{r:'A#',m:true},{r:'C',m:true},{r:'C#',m:false},{r:'D#',m:false},{r:'F',m:true},{r:'G',m:true}],
-'A':  [{r:'A',m:false},{r:'H',m:true},{r:'C#',m:true},{r:'D',m:false},{r:'E',m:false},{r:'F#',m:true},{r:'G#',m:true}],
+'A':  [{r:'A',m:false},{r:'H',m:true},{r:'C#',m:true},{r:'D',m:false},{r:'E',m:false},{r:'F#',m:true},{r:'G#',m:true}],
 'A#': [{r:'A#',m:false},{r:'C',m:true},{r:'D',m:true},{r:'D#',m:false},{r:'F',m:false},{r:'G',m:true},{r:'A',m:true}],
-'H':  [{r:'H',m:false},{r:'C#',m:true},{r:'D#',m:true},{r:'E',m:false},{r:'F#',m:false},{r:'G#',m:true},{r:'A#',m:true}]
+'H':  [{r:'H',m:false},{r:'C#',m:true},{r:'D#',m:true},{r:'E',m:false},{r:'F#',m:false},{r:'G#',m:true},{r:'A#',m:true}]
 };
 let songs = [], setlists = [], teams = [];
 let teamDataCache = {}, teamListenerUnsubs = {}, currentTeamDetailId = null;
