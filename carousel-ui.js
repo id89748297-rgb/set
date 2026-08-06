@@ -38,7 +38,7 @@ if (isActive) classes.push('active');
 if (isNeighbor && !isActive) classes.push('neighbor');
 const badge = getTeamBadge(item);
 const iconHtml = item.type === 'team' && item.avatar
-? `<img src="${item.avatar}" alt="">`
+? `<img src="${escapeHtml(item.avatar)}" alt="">`
 : item.icon;
 return `<div class="${classes.join(' ')}" data-real-idx="${realIdx}" data-item-id="${item.id}" onclick="handleCarouselClick(${realIdx})">
 <div class="carousel-item-inner">
@@ -228,7 +228,7 @@ const dx = Math.abs(e.touches[0].clientX - carouselTouchStartX);
 const dy = Math.abs(e.touches[0].clientY - carouselTouchStartY);
 if (dx > 8 || dy > 8) carouselMoved = true;
 if (dx > dy && dx > 10) e.preventDefault();
-}, { passive: true });
+}, { passive: false });
 container.addEventListener('touchend', (e) => {
 if (!carouselTracking) return;
 carouselTracking = false;

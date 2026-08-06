@@ -192,7 +192,7 @@ async function saveSetlist() {
     }
 }
 function openEditSetlistModal(id) { const sl = setlists.find(x => x.id === id); document.getElementById('edit-sl-date').value = sl.date; document.getElementById('edit-sl-time').value = sl.time || ''; document.getElementById('edit-sl-name').value = sl.name; currentSlId = id; document.getElementById('modal-edit-setlist').classList.add('show'); }
-function saveEditSetlist() { const date = document.getElementById('edit-sl-date').value; const time = document.getElementById('edit-sl-time').value; const name = document.getElementById('edit-sl-name').value; if (!name || !date) return; const sl = setlists.find(x => x.id === currentSlId); if (sl) { sl.date = date; sl.time = time || ''; sl.name = name; } saveToStorage(); closeModal('modal-edit-setlist'); renderSetlists(); if (document.getElementById('page-setlist-detail').classList.contains('active')) { document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${sl.name}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`; renderSlSongs(); } }
+function saveEditSetlist() { const date = document.getElementById('edit-sl-date').value; const time = document.getElementById('edit-sl-time').value; const name = document.getElementById('edit-sl-name').value; if (!name || !date) return; const sl = setlists.find(x => x.id === currentSlId); if (sl) { sl.date = date; sl.time = time || ''; sl.name = name; } saveToStorage(); closeModal('modal-edit-setlist'); renderSetlists(); if (document.getElementById('page-setlist-detail').classList.contains('active')) { document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${escapeHtml(sl.name)}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`; renderSlSongs(); } }
 function showSetlistDeleteChoice(id, name, isVl) { pendingSetlistAction = { id, name, isVl }; document.getElementById('delete-setlist-name').innerText = `"${name}"`; document.getElementById('modal-delete-setlist-choice').classList.add('show'); }
 function archiveSetlistChoice() {
 if (!pendingSetlistAction) return;
@@ -256,7 +256,7 @@ closeModal('modal-archive-setlist');
 pendingSetlistAction = null;
 }
 function archiveCurrentSetlist() { const sl = setlists.find(x => x.id === currentSlId); if (!sl) return; if (confirm(`Отправить "${sl.name}" в архив?`)) { sl.isArchived = true; if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = true; } saveToStorage(); syncSetlistIfTeam(sl); goBackFromSetlistDetail(); } }
-function openSetlistDetail(id) { currentSlId = id; const sl = setlists.find(x => x.id === id); document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${sl.name}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`; document.getElementById('sl-subtitle').innerText = 'Сет-лист'; renderSlSongs(); showPage('page-setlist-detail'); }
+function openSetlistDetail(id) { currentSlId = id; const sl = setlists.find(x => x.id === id); document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${escapeHtml(sl.name)}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`; document.getElementById('sl-subtitle').innerText = 'Сет-лист'; renderSlSongs(); showPage('page-setlist-detail'); }
 function goBackFromSetlistDetail() {
 const sl = setlists.find(x => x.id === currentSlId);
 if (sl && sl.teamId) {
@@ -281,7 +281,7 @@ function renderSlSongs() {
 const sl = setlists.find(x => x.id === currentSlId); const list = document.getElementById('sl-songs-list'); list.innerHTML = '';
 sl.songs.forEach((item, idx) => { const s = songs.find(x => x.id === item.id); if (!s) return; const div = document.createElement('div'); div.className = 'list-item'; div.draggable = true; div.dataset.index = idx;
 const originalKeyLabel = s.key ? ` [${s.key}]` : ''; const currentSlKey = item.key || s.key; const localBadge = item.chordpro ? ' <span style="font-size:11px;">(лок.)</span>' : '';
-const authorText = s.author ? `<div style="color:#888; font-size:8px; margin-top: 2px;">${s.author}</div>` : '';
+const authorText = s.author ? `<div style="color:#888; font-size:8px; margin-top: 2px;">${escapeHtml(s.author)}</div>` : '';
 const bpmText = s.bpm ? `<div style="color:#888; font-size:10px; white-space: nowrap; text-align: right;">${s.bpm} BPM</div>` : '';
 const rightInfo = (bpmText || authorText) ? `<div style="display: flex; flex-direction: column; align-items: flex-end; margin-right: 8px; flex-shrink: 0;">${bpmText}${authorText}</div>` : '';
 let keySelectHtml = `<select class="key-select-inline" onchange="changeSongKeyInSetlist(${item.id}, this.value)">`; NOTES_SHARP.forEach(key => { keySelectHtml += `<option value="${key}" ${(key === currentSlKey) ? 'selected' : ''}>${key}</option>`; }); keySelectHtml += '</select>';

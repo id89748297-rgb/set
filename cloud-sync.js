@@ -39,16 +39,16 @@ if (data.setlists) {
                 localStorage.setItem('clc_teams', JSON.stringify(teams));
                 updated = true;
             }
-            if (data.sectionNotes && JSON.stringify(data.sectionNotes) !== JSON.stringify(sectionNotes)) {
-                sectionNotes = data.sectionNotes;
-                localStorage.setItem('clc_section_notes', JSON.stringify(sectionNotes));
-                updated = true;
-            }
-            if (data.inlineComments && JSON.stringify(data.inlineComments) !== JSON.stringify(inlineComments)) {
-                inlineComments = data.inlineComments;
-                localStorage.setItem('clc_inline_comments', JSON.stringify(inlineComments));
-                updated = true;
-            }
+            if (data.sectionNotes) {
+    sectionNotes = { ...data.sectionNotes, ...sectionNotes };
+    localStorage.setItem('clc_section_notes', JSON.stringify(sectionNotes));
+    updated = true;
+}
+if (data.inlineComments) {
+    inlineComments = { ...data.inlineComments, ...inlineComments };
+    localStorage.setItem('clc_inline_comments', JSON.stringify(inlineComments));
+    updated = true;
+}
             if (data.avatar) {
                 localStorage.setItem('clc_avatar_' + currentUser.uid, data.avatar);
                 updateAvatarsInUI(data.avatar);
@@ -124,8 +124,8 @@ if (data.setlists) {
                     needsRender = true;
                 }
                 teams.forEach(t => startTeamDataListener(t.id));
-                if (data.sectionNotes) { sectionNotes = data.sectionNotes; needsRender = true; }
-                if (data.inlineComments) { inlineComments = data.inlineComments; needsRender = true; }
+               if (data.sectionNotes) { sectionNotes = { ...data.sectionNotes, ...sectionNotes }; needsRender = true; }
+if (data.inlineComments) { inlineComments = { ...data.inlineComments, ...inlineComments }; needsRender = true; }
                 if (data.avatar && !localStorage.getItem('clc_avatar_' + currentUser.uid)) {
                     localStorage.setItem('clc_avatar_' + currentUser.uid, data.avatar);
                     updateAvatarsInUI(data.avatar);
