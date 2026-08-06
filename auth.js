@@ -39,12 +39,17 @@ if (profileBtn) profileBtn.style.display = 'flex';
         });
 
         // ✅ ЗАПУСКАЕМ СИНХРОНИЗАЦИЮ В РЕАЛЬНОМ ВРЕМЕНИ (было пропущено!)
-        startCloudSync();
-
-        // ✅ РЕГИСТРИРУЕМ СЕССИЮ УСТРОЙСТВА
-        registerSession();
-
-    } else {
+        startCloudSync();
+ 
+        // ✅ РЕГИСТРИРУЕМ СЕССИЮ УСТРОЙСТВА
+        registerSession();
+ 
+        // ✅ ПОЧИНКА СТАРЫХ КОМАНД: создаём "пропуск" участника, если его нет
+        if (typeof ensureTeamMemberships === 'function') {
+            ensureTeamMemberships();
+        }
+ 
+    } else {
         currentUser = null;
         localStorage.removeItem('clc_current_uid');
         console.log('❌ Не авторизован');
