@@ -44,11 +44,16 @@ let currentMembersIds = [];
 async function ensureTeamMemberships() {
     if (!currentUser || !db) return;
     const myTeams = (teams || []).filter(t => t && t.id);
-    await Promise.all(myTeams.map(t =>
-        db.collection('teamRegistry').doc(t.id).collection('members').doc(currentUser.uid)
-            .set({ joinedAt: Date.now() }, { merge: true })
-            .catch(err => console.error('Не удалось создать пропуск участника для команды ' + t.id + ':', err))
-    ));
+    await Promise.all(myTeams.map(async t => {
+        try {
+            const memberDoc = await db.collection('teamRegistry').doc(t.id).collection('members').doc(currentUser.uid).get();
+            if (!memberDoc.exists) {
+                await db.collection('teamRegistry').doc(t.id).collection('members').doc(currentUser.uid).set({ joinedAt: Date.now() });
+            }
+        } catch (err) {
+            console.error('Не удалось создать пропуск участника для команды ' + t.id + ':', err);
+        }
+    }));
 }
  
 function openTeamMembers(teamId) {
