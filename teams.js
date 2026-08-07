@@ -119,6 +119,7 @@ team.password = newPassword;
 team.updatedAt = editTimestamp;
 if (avatarData !== undefined) team.avatar = avatarData;
 if (db && currentUser) {
+console.log('DEBUG правка команды:', { teamId: team.id, uid: currentUser.uid, размерАватарки: avatarData ? avatarData.length : 'без изменений' });
 db.collection('teamRegistry').doc(team.id).set({ name: newName, password: newPassword, avatar: avatarData !== undefined ? avatarData : (team.avatar || null), createdAt: team.createdAt || Date.now(), updatedAt: editTimestamp, members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }, { merge: true })
 .then(() => showToast('✅ Команда обновлена', 'success'))
 .catch(err => { console.error('teamRegistry sync failed:', err); showToast('⚠️ Не синхронизировано с облаком: ' + err.message, 'error'); });
