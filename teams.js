@@ -140,7 +140,8 @@ startTeamDataListener(id);
 if (db && currentUser) {
 db.collection('teamRegistry').doc(id).set({ name: newName, password: newPassword, avatar: avatarData || null, createdBy: currentUser.uid, createdAt: newTeam.createdAt, members: [currentUser.uid] })
 .then(() => db.collection('teamRegistry').doc(id).collection('members').doc(currentUser.uid).set({ joinedAt: Date.now() }))
-.catch(err => console.error('teamRegistry sync failed:', err));
+.then(() => showToast('✅ Команда создана', 'success'))
+.catch(err => { console.error('teamRegistry sync failed:', err.code, err); showToast('⚠️ Команда создана локально, но не в облаке: ' + err.code, 'error'); });
 }
 }
 saveToStorage();

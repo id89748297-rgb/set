@@ -2,14 +2,15 @@
 // === CLOUD DATA SYNC ===
 
 function mergeTeamsFromCloud(remoteTeams) {
-    if (!remoteTeams) return false;
-    let changed = false;
-    const localIds = new Set(teams.map(t => t.id));
-    remoteTeams.forEach(rt => { if (!localIds.has(rt.id)) { teams.push(rt); changed = true; } });
-    const remoteIds = new Set(remoteTeams.map(t => t.id));
-    const filtered = teams.filter(t => remoteIds.has(t.id));
-    if (filtered.length !== teams.length) { teams = filtered; changed = true; }
-    return changed;
+    if (!remoteTeams) return false;
+    let changed = false;
+    const localIds = new Set(teams.map(t => t.id));
+    remoteTeams.forEach(rt => { if (!localIds.has(rt.id)) { teams.push(rt); changed = true; } });
+    const remoteIds = new Set(remoteTeams.map(t => t.id));
+    const GRACE_MS = 60000;
+    const filtered = teams.filter(t => remoteIds.has(t.id) || (t.createdAt && Date.now() - t.createdAt < GRACE_MS));
+    if (filtered.length !== teams.length) { teams = filtered; changed = true; }
+    return changed;
 }
 // Load user data from cloud
 async function loadUserDataFromCloud() {
