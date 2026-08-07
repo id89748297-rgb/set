@@ -113,12 +113,14 @@ function finalizeSave(avatarData) {
 if (editingTeamId) {
 const team = teams.find(t => t.id === editingTeamId);
 if (team) {
+const editTimestamp = Date.now();
 team.name = newName;
 team.password = newPassword;
+team.updatedAt = editTimestamp;
 if (avatarData !== undefined) team.avatar = avatarData;
 if (db && currentUser) {
 db.collection('teamRegistry').doc(team.id).collection('members').doc(currentUser.uid).set({ joinedAt: Date.now() }, { merge: true })
-.then(() => db.collection('teamRegistry').doc(team.id).set({ name: newName, password: newPassword, avatar: avatarData !== undefined ? avatarData : (team.avatar || null), createdAt: team.createdAt || Date.now(), members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }, { merge: true }))
+.then(() => db.collection('teamRegistry').doc(team.id).set({ name: newName, password: newPassword, avatar: avatarData !== undefined ? avatarData : (team.avatar || null), createdAt: team.createdAt || Date.now(), updatedAt: editTimestamp, members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }, { merge: true }))
 .then(() => showToast('✅ Команда обновлена', 'success'))
 .catch(err => { console.error('teamRegistry sync failed:', err); showToast('⚠️ Не синхронизировано с облаком: ' + err.message, 'error'); });
 }
@@ -382,9 +384,11 @@ if (!doc.exists) return;
 const data = doc.data();
 const team = teams.find(t => t.id === teamId);
 if (!team) return;
+if (data.updatedAt && team.updatedAt && data.updatedAt < team.updatedAt) return;
 team.name = data.name;
 team.avatar = data.avatar || null;
 team.password = data.password || '';
+team.updatedAt = data.updatedAt || team.updatedAt;
 const membersSet = new Set(data.members || []);
 if (data.createdBy) membersSet.add(data.createdBy);
 team.members = Array.from(membersSet);
