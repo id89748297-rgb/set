@@ -185,6 +185,7 @@ const tv = document.getElementById('home-view-teams');
 if (tv) tv.style.display = 'none';
 const td = document.getElementById('home-view-team-detail');
 if (td) td.style.display = 'none';
+currentTeamDetailId = null;
 }
 function activateCarouselItem(idx) {
 const item = carouselItems[idx];
