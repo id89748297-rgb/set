@@ -194,6 +194,7 @@ if (activeSetlists.length > 0) {
 warning += `\n⚠️ В команде ${activeSetlists.length} актуальных сет-листов — они тоже будут удалены!`;
 }
 showDeleteConfirm('team', teamId, warning, async () => {
+recentlyLeftTeams[teamId] = Date.now();
 setlists = setlists.filter(sl => sl.teamId !== teamId);
 songs = songs.filter(s => s.fromTeam !== teamId);
 teams = teams.filter(t => t.id !== teamId);
@@ -346,25 +347,67 @@ document.getElementById('modal-setlist').dataset.teamId = teamId;
 document.getElementById('modal-setlist').classList.add('show');
 }
 function copySetlistToPersonal(setlistId) {
+
 const sl = setlists.find(x => x.id === setlistId);
+
 if (!sl) return;
+
 const newId = getNextId(setlists);
+
+const newSongs = sl.songs.map(item => {
+
+const teamSong = songs.find(x => x.id === item.id);
+
+if (!teamSong) return { ...item };
+
+const existingPersonal = songs.find(x => !x.fromTeam && x.title.toLowerCase() === teamSong.title.toLowerCase());
+
+if (existingPersonal) {
+
+return { ...item, id: existingPersonal.id };
+
+}
+
+const newSongId = getNextId(songs);
+
+songs.push({ id: newSongId, title: teamSong.title, author: teamSong.author || '', key: teamSong.key, bpm: teamSong.bpm || '', category: teamSong.category || '', chordpro: item.chordpro || teamSong.chordpro, images: teamSong.images || {}, cloudId: generateCloudId(), createdAt: Date.now(), columns: currentColumns, fontSize });
+
+return { ...item, id: newSongId, chordpro: null };
+
+});
+
 const newSl = {
+
 id: newId,
+
 date: sl.date,
+
 time: sl.time || '',
+
 name: sl.name,
+
 isArchived: false,
+
 teamId: null,
-songs: sl.songs.map(item => ({...item})),
+
+songs: newSongs,
+
 copiedFrom: sl.id,
+
 copiedAt: Date.now()
+
 };
+
 setlists.push(newSl);
+
 saveToStorage();
+
 renderSetlists();
+
 showTeamDetailView(sl.teamId);
+
 alert(`✅ Сет-лист «${sl.name}» добавлен в ваши сет-листы!`);
+
 }
 function applyTeamOverlay(teamId) {
 const data = teamDataCache[teamId];
@@ -418,6 +461,7 @@ handleKickedFromTeam(teamId);
 function handleKickedFromTeam(teamId) {
 const team = teams.find(t => t.id === teamId);
 const teamName = team ? team.name : 'команда';
+recentlyLeftTeams[teamId] = Date.now();
 setlists = setlists.filter(sl => sl.teamId !== teamId);
 songs = songs.filter(s => s.fromTeam !== teamId);
 teams = teams.filter(t => t.id !== teamId);

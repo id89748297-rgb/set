@@ -6,21 +6,40 @@ const key = item.key || s.key;
 return { title: s.title, author: s.author || '', key: key, originalKey: s.key, capo: item.capo || 0, bpm: s.bpm || '', category: s.category || '', chordpro: chordpro, sectionNotes: sectionNotes[s.id] || {}, inlineComments: inlineComments[s.id] || {}, images: s.images || {} };
 }
 function exportAllActiveSetlists() { const active = setlists.filter(sl => !sl.isArchived && !sl.teamId); if (!active.length) { alert('Нет актуальных сет-листов'); return; } shareFile({ version: 2, type: 'setlists-bulk', app: 'Worship SetUP', data: { setlists: active.map(sl => ({ date: sl.date, time: sl.time || '', name: sl.name, songs: sl.songs.map(item => { const s = songs.find(x => x.id === item.id); return s ? exportSongFromSetlist(item, s) : null; }).filter(Boolean) })) } }, `AllSetlists_${getCurrentDate()}.clcsetlist`); }
-function handleImportSetlist(event) { const files = event.target.files; if (!files?.length) return; let processed = 0, totalSongs = 0, totalSl = 0; const total = files.length; Array.from(files).forEach(file => { const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (data.type === 'setlists-bulk' && data.data?.setlists) data.data.setlists.forEach(slData => { const r = importSingleSetlist(slData); totalSongs += r.songsAdded; totalSl++; }); else if (data.type === 'setlist' && data.data) { const r = importSingleSetlist(data.data); totalSongs += r.songsAdded; totalSl++; } else alert(`❌ "${file.name}" — не файл сет-листа`); } catch (err) { alert(`❌ Ошибка "${file.name}": ` + err.message); } if (++processed === total) { saveToStorage(); renderSetlists();                 alert(`✅ Импортировано!\nСет-листов: ${totalSl}\nПесен: ${totalSongs}`);
-            }
-        };
-        
-        // <-- ВСТАВИТЬ ЭТОТ БЛОК ЦЕЛИКОМ
-        reader.onerror = () => { 
-            alert(`❌ Не удалось прочитать файл "${file.name}"`); 
-            if (++processed === total) { 
-                saveToStorage(); 
-                renderSetlists(); 
-                alert(`✅ Импортировано!\nСет-листов: ${totalSl}\nПесен: ${totalSongs}`); 
-            } 
-        };
-        
-        reader.readAsText(file); } }; reader.readAsText(file); }); event.target.value = ''; }
+function handleImportSetlist(event) {
+const files = event.target.files;
+if (!files?.length) return;
+let processed = 0, totalSongs = 0, totalSl = 0;
+const total = files.length;
+Array.from(files).forEach(file => {
+const reader = new FileReader();
+reader.onload = (e) => {
+try {
+const data = JSON.parse(e.target.result);
+if (data.type === 'setlists-bulk' && data.data?.setlists) data.data.setlists.forEach(slData => { const r = importSingleSetlist(slData); totalSongs += r.songsAdded; totalSl++; });
+else if (data.type === 'setlist' && data.data) { const r = importSingleSetlist(data.data); totalSongs += r.songsAdded; totalSl++; }
+else alert(`❌ "${file.name}" — не файл сет-листа`);
+} catch (err) {
+alert(`❌ Ошибка "${file.name}": ` + err.message);
+}
+if (++processed === total) {
+saveToStorage();
+renderSetlists();
+alert(`✅ Импортировано!\nСет-листов: ${totalSl}\nПесен: ${totalSongs}`);
+}
+};
+reader.onerror = () => {
+alert(`❌ Не удалось прочитать файл "${file.name}"`);
+if (++processed === total) {
+saveToStorage();
+renderSetlists();
+alert(`✅ Импортировано!\nСет-листов: ${totalSl}\nПесен: ${totalSongs}`);
+}
+};
+reader.readAsText(file);
+});
+event.target.value = '';
+}
 function sanitizeImportedSong(sd) {
 if (!sd || typeof sd !== 'object') return null;
 const title = typeof sd.title === 'string' ? sd.title.trim().slice(0, 200) : '';
