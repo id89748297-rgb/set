@@ -199,6 +199,7 @@ songs = songs.filter(s => s.fromTeam !== teamId);
 teams = teams.filter(t => t.id !== teamId);
 if (teamListenerUnsubs[teamId]) { teamListenerUnsubs[teamId](); delete teamListenerUnsubs[teamId]; }
 if (teamRegistryListenerUnsubs[teamId]) { teamRegistryListenerUnsubs[teamId](); delete teamRegistryListenerUnsubs[teamId]; }
+if (membershipWatchUnsubs[teamId]) { membershipWatchUnsubs[teamId](); delete membershipWatchUnsubs[teamId]; }
 delete teamDataCache[teamId];
 if (db && currentUser) {
 db.collection('teamRegistry').doc(teamId).update({ members: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) }).catch(err => console.error('Не удалось убрать себя из участников:', err));
@@ -212,7 +213,11 @@ if (teamsIdx !== -1) {
 carouselActiveIndex = teamsIdx;
 activateCarouselItem(teamsIdx);
 }
+if (team.createdBy === currentUser.uid) {
 alert(`✅ Команда «${team.name}» удалена`);
+} else {
+alert(`✅ Вы покинули команду «${team.name}»`);
+}
 });
 }
 function copyTeamInviteId() {
@@ -390,6 +395,7 @@ team.name = data.name;
 team.avatar = data.avatar || null;
 team.password = data.password || '';
 team.updatedAt = data.updatedAt || team.updatedAt;
+team.createdBy = data.createdBy || team.createdBy;
 const membersSet = new Set(data.members || []);
 if (data.createdBy) membersSet.add(data.createdBy);
 team.members = Array.from(membersSet);
@@ -399,8 +405,40 @@ if (currentHomeView === 'teams') showTeamsView();
 if (currentTeamDetailId === teamId) showTeamDetailView(teamId);
 }, err => console.error('teamRegistry listener error:', err));
 }
+function startMembershipWatch(teamId) {
+if (membershipWatchUnsubs[teamId] || !db || !currentUser) return;
+let sawExisting = false;
+membershipWatchUnsubs[teamId] = db.collection('teamRegistry').doc(teamId).collection('members').doc(currentUser.uid)
+.onSnapshot(doc => {
+if (doc.exists) { sawExisting = true; return; }
+if (!sawExisting) return;
+handleKickedFromTeam(teamId);
+}, err => console.error('membership watch error:', err));
+}
+function handleKickedFromTeam(teamId) {
+const team = teams.find(t => t.id === teamId);
+const teamName = team ? team.name : 'команда';
+setlists = setlists.filter(sl => sl.teamId !== teamId);
+songs = songs.filter(s => s.fromTeam !== teamId);
+teams = teams.filter(t => t.id !== teamId);
+if (teamListenerUnsubs[teamId]) { teamListenerUnsubs[teamId](); delete teamListenerUnsubs[teamId]; }
+if (teamRegistryListenerUnsubs[teamId]) { teamRegistryListenerUnsubs[teamId](); delete teamRegistryListenerUnsubs[teamId]; }
+if (membershipWatchUnsubs[teamId]) { membershipWatchUnsubs[teamId](); delete membershipWatchUnsubs[teamId]; }
+delete teamDataCache[teamId];
+saveToStorage();
+renderCarousel();
+if (currentTeamDetailId === teamId || currentHomeView === 'team_' + teamId) {
+currentHomeView = 'teams';
+const teamsIdx = carouselItems.findIndex(i => i.type === 'teams');
+if (teamsIdx !== -1) { carouselActiveIndex = teamsIdx; activateCarouselItem(teamsIdx); }
+} else if (currentHomeView === 'teams') {
+showTeamsView();
+}
+alert(`⚠️ Вас удалили из команды «${teamName}»`);
+}
 function startTeamDataListener(teamId) {
 startTeamRegistryListener(teamId);
+startMembershipWatch(teamId);
 if (teamListenerUnsubs[teamId] || !db || !currentUser) return;
 teamListenerUnsubs[teamId] = db.collection('teamData').doc(teamId).onSnapshot(doc => {
 teamDataCache[teamId] = doc.exists ? doc.data() : { songs: [], setlists: [] };
@@ -566,7 +604,7 @@ async function publishSetlistToTeamData(sl, teamId) {
     if (!db || !currentUser) return false;
     const songsToShare = sl.songs.map(item => {
         const s = songs.find(x => x.id === item.id);
-        return s ? { ...s } : null;
+        return s ? stripPersonalSettingsForTeam(s) : null;
     }).filter(Boolean);
     const docRef = db.collection('teamData').doc(teamId);
     let assignedId = null;

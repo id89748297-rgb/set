@@ -100,6 +100,24 @@ function closeTeamMembers() {
     currentMembersTeamId = null;
     currentMembersProfiles = {};
 }
+async function kickTeamMember(uid) {
+    const team = teams.find(t => t.id === currentMembersTeamId);
+    if (!team || !currentUser) return;
+    if (team.createdBy !== currentUser.uid) { alert('❌ Удалять участников может только создатель команды'); return; }
+    if (uid === currentUser.uid) { alert('❌ Нельзя удалить самого себя'); return; }
+    const label = [currentMembersProfiles[uid]?.displayName, currentMembersProfiles[uid]?.lastName].filter(Boolean).join(' ').trim() || 'этого участника';
+    if (!confirm(`Удалить ${label} из команды «${team.name}»?`)) return;
+    try {
+        await db.collection('teamRegistry').doc(team.id).collection('members').doc(uid).delete();
+        await db.collection('teamRegistry').doc(team.id).update({ members: firebase.firestore.FieldValue.arrayRemove(uid) });
+        currentMembersIds = currentMembersIds.filter(id => id !== uid);
+        renderTeamMembersList();
+        showToast('✅ Участник удалён из команды', 'success');
+    } catch (err) {
+        console.error('Не удалось удалить участника:', err);
+        showToast('⚠️ Не удалось удалить участника: ' + err.code, 'error');
+    }
+}
  
 function renderTeamMembersList() {
     const team = teams.find(t => t.id === currentMembersTeamId);
@@ -122,12 +140,14 @@ function renderTeamMembersList() {
         list.innerHTML = '<div style="text-align:center;color:#888;padding:30px;">Никого не найдено</div>';
         return;
     }
+    const isOwner = currentUser && team.createdBy === currentUser.uid;
     list.innerHTML = rows.map(r => {
         const avatarHtml = r.p.avatar
             ? `<img src="${escapeHtml(r.p.avatar)}" class="team-member-avatar" alt="">`
             : `<div class="team-member-avatar-placeholder">👤</div>`;
         const isMe = currentUser && r.uid === currentUser.uid;
         const sub = [r.p.city, r.p.country].filter(Boolean).join(', ');
+        const kickBtn = (isOwner && !isMe) ? `<button class="btn-danger" style="padding:6px 12px;font-size:12px;min-height:auto;border-radius:6px;" onclick="event.stopPropagation();kickTeamMember('${r.uid}')">Удалить</button>` : '';
         return `<div class="list-item" style="cursor:pointer;" onclick="openMemberProfile('${r.uid}')">
 <div class="item-left">
 ${avatarHtml}
@@ -135,6 +155,7 @@ ${avatarHtml}
 <div class="item-title">${escapeHtml(r.label)}${isMe ? ' <span style="color:#4caf50;font-size:11px;">(вы)</span>' : ''}</div>
 ${sub ? `<div class="item-sub">${escapeHtml(sub)}</div>` : ''}
 </div>
+${kickBtn}
 </div>
 </div>`;
     }).join('');

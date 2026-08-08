@@ -46,6 +46,11 @@ if (data.inlineComments) {
     localStorage.setItem('clc_inline_comments', JSON.stringify(inlineComments));
     updated = true;
 }
+if (data.personalViewSettings) {
+                personalViewSettings = { ...data.personalViewSettings, ...personalViewSettings };
+                localStorage.setItem('clc_personal_view_settings', JSON.stringify(personalViewSettings));
+                updated = true;
+            }
             if (data.avatar) {
                 localStorage.setItem('clc_avatar_' + currentUser.uid, data.avatar);
                 updateAvatarsInUI(data.avatar);
@@ -84,11 +89,12 @@ async function saveUserDataToCloud() {
             songs: songs.filter(s => !s.fromTeam),
             setlists: setlists.filter(sl => !sl.fromTeamSync),
             teams: teams.map(t => ({ id: t.id, createdAt: t.createdAt || null, joinedByLink: t.joinedByLink || false })),
-            sectionNotes: sectionNotes,
-            inlineComments: inlineComments,
-            avatar: localAvatar || null,  // === НОВОЕ: Сохраняем аватарку ===
-            lastSync: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+            sectionNotes: sectionNotes,
+            inlineComments: inlineComments,
+            personalViewSettings: personalViewSettings,
+            avatar: localAvatar || null,  // === НОВОЕ: Сохраняем аватарку ===
+            lastSync: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
         console.log('✅ Данные сохранены в облако');
     } catch (error) {
         console.error('❌ Ошибка сохранения:', error);
@@ -122,7 +128,8 @@ if (data.setlists) {
                 }
                 teams.forEach(t => startTeamDataListener(t.id));
                if (data.sectionNotes) { sectionNotes = { ...data.sectionNotes, ...sectionNotes }; needsRender = true; }
-if (data.inlineComments) { inlineComments = { ...data.inlineComments, ...inlineComments }; needsRender = true; }
+                if (data.inlineComments) { inlineComments = { ...data.inlineComments, ...inlineComments }; needsRender = true; }
+                if (data.personalViewSettings) { personalViewSettings = { ...data.personalViewSettings, ...personalViewSettings }; needsRender = true; }
                 if (data.avatar && !localStorage.getItem('clc_avatar_' + currentUser.uid)) {
                     localStorage.setItem('clc_avatar_' + currentUser.uid, data.avatar);
                     updateAvatarsInUI(data.avatar);

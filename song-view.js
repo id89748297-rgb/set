@@ -105,6 +105,7 @@ fontSize = s.fontSize || fontSize; currentAccidental = s.accidental || 'sharp'; 
 currentHideLyrics = s.hideLyrics || false;
 if (slId) { const sl = setlists.find(x => x.id === slId); const item = sl.songs.find(x => x.id === id); if (item) { currentCapo = item.capo || 0; const savedKey = item.key || null; if (!isDesktop) currentColumns = item.columns || s.columns || 1; fontSize = item.fontSize || fontSize; currentKey = savedKey || originalKey; currentAccidental = item.accidental || s.accidental || 'sharp'; currentHideChords = item.hideChords !== undefined ? item.hideChords : (s.hideChords || false); if (item.hideLyrics !== undefined) currentHideLyrics = item.hideLyrics; } else { currentKey = originalKey; } }
 else { currentKey = originalKey; }
+if (slId) { const sl = setlists.find(x => x.id === slId); if (sl && sl.fromTeamSync) { const pv = personalViewSettings[slId + '_' + id]; if (pv) { if (pv.capo !== undefined) currentCapo = pv.capo; if (pv.fontSize !== undefined) fontSize = pv.fontSize; if (pv.accidental !== undefined) currentAccidental = pv.accidental; if (pv.hideChords !== undefined) currentHideChords = pv.hideChords; if (pv.hideLyrics !== undefined) currentHideLyrics = pv.hideLyrics; if (pv.columns !== undefined && !isDesktop) currentColumns = pv.columns; } } }
 fillKeySelect('key-select', currentKey, true); document.getElementById('capo-select').value = currentCapo; syncColumnsSelects(currentColumns);
 document.getElementById('btn-accidental').innerText = currentAccidental === 'sharp' ? '♯' : '♭'; document.getElementById('btn-save-all').style.display = 'block';
 const sidePrev = document.getElementById('side-prev'); const sideNext = document.getElementById('side-next'); const swipeHint = document.getElementById('swipe-hint');
@@ -152,6 +153,9 @@ item.accidental = currentAccidental;
 item.hideChords = currentHideChords;
 item.hideLyrics = currentHideLyrics;
 sl.songs.forEach(it => { it.columns = currentColumns; });
+if (sl.fromTeamSync) {
+personalViewSettings[sl.id + '_' + currentSongId] = { capo: currentCapo, fontSize, accidental: currentAccidental, hideChords: currentHideChords, hideLyrics: currentHideLyrics, columns: currentColumns };
+}
 saveToStorage();
 syncSetlistIfTeam(sl);
 saveDefaultSettings();
@@ -196,7 +200,7 @@ openSongView(homeFilteredSongs[homeSongIndex].id, null);
 }
 function changeKey(value) { currentKey = value; updateSongView(); }
 function changeCapo(value) { currentCapo = parseInt(value); updateSongView(); }
-function changeColumns(value) { currentColumns = parseInt(value); syncColumnsSelects(value); updateSongView(); if (!window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 769px)').matches) { const s = songs.find(x => x.id === currentSongId); if (s) { s.columns = currentColumns; saveToStorage(); } if (currentSlId) { const sl = setlists.find(x => x.id === currentSlId); if (sl) { sl.songs.forEach(it => { it.columns = currentColumns; }); saveToStorage(); syncSetlistIfTeam(sl); } } } }
+function changeColumns(value) { currentColumns = parseInt(value); syncColumnsSelects(value); updateSongView(); if (!window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 769px)').matches) { const s = songs.find(x => x.id === currentSongId); if (s) { s.columns = currentColumns; saveToStorage(); } if (currentSlId) { const sl = setlists.find(x => x.id === currentSlId); if (sl) { sl.songs.forEach(it => { it.columns = currentColumns; }); if (sl.fromTeamSync) { const key = sl.id + '_' + currentSongId; personalViewSettings[key] = { ...(personalViewSettings[key] || {}), columns: currentColumns }; } saveToStorage(); syncSetlistIfTeam(sl); } } } }
 function updateSongView() { const s = songs.find(x => x.id === currentSongId); if (!s) return; let text = s.chordpro; if (currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl?.songs.find(x => x.id === currentSongId); if (item?.chordpro) text = item.chordpro; }
 renderSongLinks(extractUrlsFromChordpro(text));
 renderSongContent(text, originalKey, currentKey, currentCapo);

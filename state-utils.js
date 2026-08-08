@@ -30,9 +30,10 @@ const DIATONIC_CHORDS = {
 let songs = [], setlists = [], teams = [];
 let teamDataCache = {}, teamListenerUnsubs = {}, currentTeamDetailId = null;
 let teamRegistryListenerUnsubs = {};
+let membershipWatchUnsubs = {};
 let currentTab = 'current', currentHomeView = 'songs', currentSongId = null, currentSlId = null;
 let originalKey = 'C', currentKey = 'C', currentCapo = 0, currentColumns = 1, fontSize = 14;
-let isLocalEdit = false, pendingSetlistAction = null, sectionNotes = {}, inlineComments = {};
+let isLocalEdit = false, pendingSetlistAction = null, sectionNotes = {}, inlineComments = {}, personalViewSettings = {};
 let isInlineEditing = false, currentImageKey = null, editingSectionIdx = null;
 let editingSectionStartLine = -1, editingSectionEndLine = -1;
 let currentAccidental = 'sharp';

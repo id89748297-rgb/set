@@ -1,5 +1,5 @@
 function loadFromStorage() {
-try { songs = JSON.parse(localStorage.getItem('clc_songs') || '[]'); setlists = JSON.parse(localStorage.getItem('clc_setlists') || '[]'); sectionNotes = JSON.parse(localStorage.getItem('clc_section_notes') || '{}'); inlineComments = JSON.parse(localStorage.getItem('clc_inline_comments') || '{}'); teams = JSON.parse(localStorage.getItem('clc_teams') || '[]'); } catch { songs = []; setlists = []; sectionNotes = {}; inlineComments = {}; teams = []; }
+try { songs = JSON.parse(localStorage.getItem('clc_songs') || '[]'); setlists = JSON.parse(localStorage.getItem('clc_setlists') || '[]'); sectionNotes = JSON.parse(localStorage.getItem('clc_section_notes') || '{}'); inlineComments = JSON.parse(localStorage.getItem('clc_inline_comments') || '{}'); teams = JSON.parse(localStorage.getItem('clc_teams') || '[]'); personalViewSettings = JSON.parse(localStorage.getItem('clc_personal_view_settings') || '{}'); } catch { songs = []; setlists = []; sectionNotes = {}; inlineComments = {}; teams = []; personalViewSettings = {}; }
 const savedTheme = localStorage.getItem('clc_theme');
 if (savedTheme === 'light') {
 document.body.classList.remove('dark');
@@ -32,7 +32,7 @@ if (savedSort) { const sel = document.getElementById('songs-sort'); if (sel) sel
 const savedCategoryFilter = localStorage.getItem('clc_category_filter');
 if (savedCategoryFilter) { const sel = document.getElementById('category-filter'); if (sel) sel.value = savedCategoryFilter; }
 }
-function saveToStorage() { localStorage.setItem('clc_songs', JSON.stringify(songs.filter(s => !s.fromTeam))); localStorage.setItem('clc_setlists', JSON.stringify(setlists.filter(sl => !sl.fromTeamSync))); localStorage.setItem('clc_section_notes', JSON.stringify(sectionNotes)); localStorage.setItem('clc_inline_comments', JSON.stringify(inlineComments)); localStorage.setItem('clc_teams', JSON.stringify(teams)); }
+function saveToStorage() { localStorage.setItem('clc_songs', JSON.stringify(songs.filter(s => !s.fromTeam))); localStorage.setItem('clc_setlists', JSON.stringify(setlists.filter(sl => !sl.fromTeamSync))); localStorage.setItem('clc_section_notes', JSON.stringify(sectionNotes)); localStorage.setItem('clc_inline_comments', JSON.stringify(inlineComments)); localStorage.setItem('clc_teams', JSON.stringify(teams)); localStorage.setItem('clc_personal_view_settings', JSON.stringify(personalViewSettings)); }
 function updateThemeButtons(icon) {
 document.querySelectorAll('.theme-toggle').forEach(b => b.innerText = icon);
 }
