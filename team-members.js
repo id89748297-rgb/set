@@ -103,7 +103,12 @@ function closeTeamMembers() {
 async function kickTeamMember(uid) {
     const team = teams.find(t => t.id === currentMembersTeamId);
     if (!team || !currentUser) return;
-    if (team.createdBy !== currentUser.uid) { alert('❌ Удалять участников может только создатель команды'); return; }
+    const myRole = getMyRole(team.id);
+    const roles = teamRolesCache[team.id] || {};
+    const targetRole = (roles[uid] && roles[uid].role) || 'member';
+    if (targetRole === 'owner') { alert('❌ Нельзя исключить владельца'); return; }
+    if (myRole === 'admin' && targetRole === 'admin') { alert('❌ Администратор не может исключить другого администратора'); return; }
+    if (myRole !== 'owner' && myRole !== 'admin') { alert('❌ Удалять участников может только владелец или администратор'); return; }
     if (uid === currentUser.uid) { alert('❌ Нельзя удалить самого себя'); return; }
     const label = [currentMembersProfiles[uid]?.displayName, currentMembersProfiles[uid]?.lastName].filter(Boolean).join(' ').trim() || 'этого участника';
     if (!confirm(`Удалить ${label} из команды «${team.name}»?`)) return;
@@ -140,14 +145,21 @@ function renderTeamMembersList() {
         list.innerHTML = '<div style="text-align:center;color:#888;padding:30px;">Никого не найдено</div>';
         return;
     }
-    const isOwner = currentUser && team.createdBy === currentUser.uid;
+    const myRole = getMyRole(team.id);
+    const iAmOwner = myRole === 'owner';
+    const iAmAdmin = myRole === 'admin';
+    const roles = teamRolesCache[team.id] || {};
     list.innerHTML = rows.map(r => {
         const avatarHtml = r.p.avatar
             ? `<img src="${escapeHtml(r.p.avatar)}" class="team-member-avatar" alt="">`
             : `<div class="team-member-avatar-placeholder">👤</div>`;
         const isMe = currentUser && r.uid === currentUser.uid;
         const sub = [r.p.city, r.p.country].filter(Boolean).join(', ');
-        const kickBtn = (isOwner && !isMe) ? `<button class="btn-danger" style="padding:6px 12px;font-size:12px;min-height:auto;border-radius:6px;" onclick="event.stopPropagation();kickTeamMember('${r.uid}')">Удалить</button>` : '';
+        const targetRole = (roles[r.uid] && roles[r.uid].role) || 'member';
+        const roleLabel = targetRole === 'owner' ? 'владелец' : targetRole === 'admin' ? 'администратор' : '';
+        const canKick = !isMe && targetRole !== 'owner' && (iAmOwner || (iAmAdmin && targetRole !== 'admin'));
+        const kickBtn = canKick ? `<button class="btn-danger" style="padding:6px 12px;font-size:12px;min-height:auto;border-radius:6px;" onclick="event.stopPropagation();kickTeamMember('${r.uid}')">Удалить</button>` : '';
+        const roleHtml = roleLabel ? `<div style="color:#888;font-size:12px;white-space:nowrap;">${roleLabel}</div>` : '';
         return `<div class="list-item" style="cursor:pointer;" onclick="openMemberProfile('${r.uid}')">
 <div class="item-left">
 ${avatarHtml}
@@ -155,6 +167,7 @@ ${avatarHtml}
 <div class="item-title">${escapeHtml(r.label)}${isMe ? ' <span style="color:#4caf50;font-size:11px;">(вы)</span>' : ''}</div>
 ${sub ? `<div class="item-sub">${escapeHtml(sub)}</div>` : ''}
 </div>
+${roleHtml}
 ${kickBtn}
 </div>
 </div>`;

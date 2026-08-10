@@ -297,6 +297,14 @@ if (teams.length >= MAX_TEAMS) {
 alert(`❌ Достигнут лимит команд (${MAX_TEAMS})`);
 return;
 }
+if (teams.find(t => t.id === teamId)) {
+startTeamDataListener(teamId);
+closeModal('modal-join-team-link');
+renderCarousel();
+showTeamsView();
+alert('ℹ️ Вы уже состоите в этой команде');
+return;
+}
 let registryDoc;
 try {
 registryDoc = await db.collection('teamRegistry').doc(teamId).get();
@@ -315,14 +323,13 @@ return;
 }
 const updatedMembers = Array.from(new Set([...(registry.members || []), registry.createdBy, currentUser.uid].filter(Boolean)));
 try {
-// Сначала — свой документ-пропуск (это и есть настоящее «вступление»),
-// потом — обновление массива members для обратной совместимости со счётчиком в UI.
 await db.collection('teamRegistry').doc(teamId).collection('members').doc(currentUser.uid).set({ joinedAt: Date.now() });
-await db.collection('teamRegistry').doc(teamId).update({ members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) });
 } catch (err) {
 console.error('Не удалось зарегистрировать участие:', err);
-alert('⚠️ Вступление сохранено локально, но не синхронизировалось с облаком: ' + err.message);
+alert('❌ Не удалось присоединиться к команде: ' + err.message);
+return;
 }
+db.collection('teamRegistry').doc(teamId).update({ members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }).catch(() => {});
 const newTeam = {
 id: teamId,
 name: registry.name,
@@ -458,8 +465,16 @@ if (teamRolesListenerUnsubs[teamId] || !db || !currentUser) return;
 teamRolesListenerUnsubs[teamId] = db.collection('teamRegistry').doc(teamId).collection('members')
 .onSnapshot(snap => {
 const roles = {};
-snap.forEach(doc => { roles[doc.id] = { role: doc.data().role || 'member', joinedAt: doc.data().joinedAt || 0 }; });
+let myRawRole;
+snap.forEach(doc => {
+roles[doc.id] = { role: doc.data().role || 'member', joinedAt: doc.data().joinedAt || 0 };
+if (doc.id === currentUser.uid) myRawRole = doc.data().role;
+});
 teamRolesCache[teamId] = roles;
+const team = teams.find(t => t.id === teamId);
+if (!myRawRole && team && team.createdBy === currentUser.uid) {
+db.collection('teamRegistry').doc(teamId).collection('members').doc(currentUser.uid).update({ role: 'owner' }).catch(err => console.error('role bootstrap failed:', err));
+}
 if (currentMembersTeamId === teamId && typeof renderTeamMembersList === 'function') renderTeamMembersList();
 if (currentTeamDetailId === teamId) showTeamDetailView(teamId);
 }, err => console.error('roles listener error:', err));
