@@ -90,7 +90,7 @@ const categoryFilter = document.getElementById('category-filter')?.value || '';
 localStorage.setItem('clc_songs_sort', sortType);
 localStorage.setItem('clc_category_filter', categoryFilter);
 const list = document.getElementById('songs-list'); list.innerHTML = '';
-let filtered = songs.filter(s => s.title.toLowerCase().includes(q) || (s.chordpro && s.chordpro.toLowerCase().includes(q)) || (s.author && s.author.toLowerCase().includes(q)));
+let filtered = songs.filter(s => !s.fromTeam).filter(s => s.title.toLowerCase().includes(q) || (s.chordpro && s.chordpro.toLowerCase().includes(q)) || (s.author && s.author.toLowerCase().includes(q)));
 if (categoryFilter === 'none') {
 filtered = filtered.filter(s => !s.category || s.category === '');
 } else if (categoryFilter) {
@@ -118,7 +118,7 @@ document.getElementById('edit-title').value = title; document.getElementById('ed
 function saveSong() {
 const title = document.getElementById('edit-title').value.trim(); const author = document.getElementById('edit-author').value.trim(); const bpm = document.getElementById('edit-bpm').value.trim(); const category = document.getElementById('edit-category').value; const chordpro = document.getElementById('edit-text').value; const key = document.getElementById('edit-key').value;
 if (!title) { alert('Введите название!'); return; } if (!key) { alert('Выберите тональность!'); return; } if (!chordpro.trim()) { alert('Введите текст!'); return; }
-const existingSong = songs.find(s => s.title.toLowerCase() === title.toLowerCase() && s.id !== currentSongId);
+const existingSong = songs.find(s => !s.fromTeam && s.title.toLowerCase() === title.toLowerCase() && s.id !== currentSongId);
 if (existingSong) { alert(`⚠️ Песня "${title}" уже существует!`); return; }
 if (isLocalEdit && currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item) item.chordpro = chordpro; saveToStorage(); alert('✅ Сохранено локально!'); }
 else { let song = songs.find(x => x.id === currentSongId);if (song) {

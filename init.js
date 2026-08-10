@@ -1,4 +1,8 @@
 // === ИНИЦИАЛИЗАЦИЯ ===
+const lastBackup = parseInt(localStorage.getItem('clc_last_backup') || '0');
+if (Date.now() - lastBackup > 30 * 24 * 60 * 60 * 1000) {
+setTimeout(() => showToast('💾 Давно не делали резервную копию — сохраните базу в настройках', 'info'), 2000);
+}
 loadFromStorage();
 initCropEvents();  // ← НОВАЯ СТРОЧКА
 buildCarouselItems();

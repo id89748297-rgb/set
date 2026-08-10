@@ -32,6 +32,8 @@ let teamDataCache = {}, teamListenerUnsubs = {}, currentTeamDetailId = null;
 let teamRegistryListenerUnsubs = {};
 let membershipWatchUnsubs = {};
 let recentlyLeftTeams = {};
+let teamRolesCache = {};
+let teamRolesListenerUnsubs = {};
 let currentTab = 'current', currentHomeView = 'songs', currentSongId = null, currentSlId = null;
 let originalKey = 'C', currentKey = 'C', currentCapo = 0, currentColumns = 1, fontSize = 14;
 let isLocalEdit = false, pendingSetlistAction = null, sectionNotes = {}, inlineComments = {}, personalViewSettings = {};

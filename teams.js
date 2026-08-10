@@ -139,7 +139,7 @@ teams.push(newTeam);
 startTeamDataListener(id);
 if (db && currentUser) {
 db.collection('teamRegistry').doc(id).set({ name: newName, password: newPassword, avatar: avatarData || null, createdBy: currentUser.uid, createdAt: newTeam.createdAt, members: [currentUser.uid] })
-.then(() => db.collection('teamRegistry').doc(id).collection('members').doc(currentUser.uid).set({ joinedAt: Date.now() }))
+.then(() => db.collection('teamRegistry').doc(id).collection('members').doc(currentUser.uid).set({ joinedAt: Date.now(), role: 'owner' }))
 .then(() => showToast('✅ Команда создана', 'success'))
 .catch(err => { console.error('teamRegistry sync failed:', err.code, err); showToast('⚠️ Команда создана локально, но не в облаке: ' + err.code, 'error'); });
 }
@@ -201,6 +201,8 @@ teams = teams.filter(t => t.id !== teamId);
 if (teamListenerUnsubs[teamId]) { teamListenerUnsubs[teamId](); delete teamListenerUnsubs[teamId]; }
 if (teamRegistryListenerUnsubs[teamId]) { teamRegistryListenerUnsubs[teamId](); delete teamRegistryListenerUnsubs[teamId]; }
 if (membershipWatchUnsubs[teamId]) { membershipWatchUnsubs[teamId](); delete membershipWatchUnsubs[teamId]; }
+if (teamRolesListenerUnsubs[teamId]) { teamRolesListenerUnsubs[teamId](); delete teamRolesListenerUnsubs[teamId]; }
+delete teamRolesCache[teamId];
 delete teamDataCache[teamId];
 if (db && currentUser) {
 db.collection('teamRegistry').doc(teamId).update({ members: firebase.firestore.FieldValue.arrayRemove(currentUser.uid) }).catch(err => console.error('Не удалось убрать себя из участников:', err));
@@ -347,67 +349,38 @@ document.getElementById('modal-setlist').dataset.teamId = teamId;
 document.getElementById('modal-setlist').classList.add('show');
 }
 function copySetlistToPersonal(setlistId) {
-
 const sl = setlists.find(x => x.id === setlistId);
-
 if (!sl) return;
-
 const newId = getNextId(setlists);
-
 const newSongs = sl.songs.map(item => {
-
 const teamSong = songs.find(x => x.id === item.id);
-
 if (!teamSong) return { ...item };
-
 const existingPersonal = songs.find(x => !x.fromTeam && x.title.toLowerCase() === teamSong.title.toLowerCase());
-
 if (existingPersonal) {
-
-return { ...item, id: existingPersonal.id };
-
+const teamChordpro = item.chordpro || teamSong.chordpro;
+const differs = teamChordpro !== existingPersonal.chordpro;
+return { ...item, id: existingPersonal.id, chordpro: differs ? teamChordpro : null };
 }
-
 const newSongId = getNextId(songs);
-
 songs.push({ id: newSongId, title: teamSong.title, author: teamSong.author || '', key: teamSong.key, bpm: teamSong.bpm || '', category: teamSong.category || '', chordpro: item.chordpro || teamSong.chordpro, images: teamSong.images || {}, cloudId: generateCloudId(), createdAt: Date.now(), columns: currentColumns, fontSize });
-
 return { ...item, id: newSongId, chordpro: null };
-
 });
-
 const newSl = {
-
 id: newId,
-
 date: sl.date,
-
 time: sl.time || '',
-
 name: sl.name,
-
 isArchived: false,
-
 teamId: null,
-
 songs: newSongs,
-
 copiedFrom: sl.id,
-
 copiedAt: Date.now()
-
 };
-
 setlists.push(newSl);
-
 saveToStorage();
-
 renderSetlists();
-
 showTeamDetailView(sl.teamId);
-
 alert(`✅ Сет-лист «${sl.name}» добавлен в ваши сет-листы!`);
-
 }
 function applyTeamOverlay(teamId) {
 const data = teamDataCache[teamId];
@@ -480,9 +453,30 @@ showTeamsView();
 }
 alert(`⚠️ Вас удалили из команды «${teamName}»`);
 }
+function startTeamRolesListener(teamId) {
+if (teamRolesListenerUnsubs[teamId] || !db || !currentUser) return;
+teamRolesListenerUnsubs[teamId] = db.collection('teamRegistry').doc(teamId).collection('members')
+.onSnapshot(snap => {
+const roles = {};
+snap.forEach(doc => { roles[doc.id] = { role: doc.data().role || 'member', joinedAt: doc.data().joinedAt || 0 }; });
+teamRolesCache[teamId] = roles;
+if (currentMembersTeamId === teamId && typeof renderTeamMembersList === 'function') renderTeamMembersList();
+if (currentTeamDetailId === teamId) showTeamDetailView(teamId);
+}, err => console.error('roles listener error:', err));
+}
+function getMyRole(teamId) {
+const roles = teamRolesCache[teamId];
+if (!roles || !currentUser) return 'member';
+const entry = roles[currentUser.uid];
+return entry ? entry.role : 'member';
+}
+function isTeamOwner(teamId) { return getMyRole(teamId) === 'owner'; }
+function isTeamOwnerOrAdmin(teamId) { const r = getMyRole(teamId); return r === 'owner' || r === 'admin'; }
+function notAllowedForRole() { alert('⛔ Недоступно для вашей роли в команде'); }
 function startTeamDataListener(teamId) {
 startTeamRegistryListener(teamId);
 startMembershipWatch(teamId);
+startTeamRolesListener(teamId);
 if (teamListenerUnsubs[teamId] || !db || !currentUser) return;
 teamListenerUnsubs[teamId] = db.collection('teamData').doc(teamId).onSnapshot(doc => {
 teamDataCache[teamId] = doc.exists ? doc.data() : { songs: [], setlists: [] };

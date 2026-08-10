@@ -151,7 +151,7 @@ contentLines.shift();
 if (!title) { alert('Не найдено название песни!'); return; }
 const chordpro = contentLines.join('\n').trim();
 if (!chordpro) { alert('Добавьте текст песни!'); return; }
-if (songs.find(s => s.title.toLowerCase() === title.toLowerCase())) {
+if (songs.find(s => !s.fromTeam && s.title.toLowerCase() === title.toLowerCase())) {
 alert(`️ Песня "${title}" уже существует!`);
 return;
 }
