@@ -36,7 +36,7 @@ html += `<div class="list-item" style="cursor: pointer;" onclick="openTeamFromLi
 ${avatarHtml}
 <div style="min-width: 0; flex: 1;">
 <div class="item-title">${escapeHtml(t.name)}</div>
-<div class="item-sub">Участники: ${t.members ? t.members.length : 0}${t.password ? ' · 🔐' : ''}</div>
+<div class="item-sub">Участники: ${teamRolesCache[t.id] ? Object.keys(teamRolesCache[t.id]).length : (t.members ? t.members.length : 0)}${t.password ? ' · 🔐' : ''}</div>
 </div>
 </div>
 <div class="item-actions" style="display: flex; gap: 4px;">
