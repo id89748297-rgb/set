@@ -100,6 +100,23 @@ function closeTeamMembers() {
     currentMembersTeamId = null;
     currentMembersProfiles = {};
 }
+async function changeTeamMemberRole(uid, newRole) {
+    const team = teams.find(t => t.id === currentMembersTeamId);
+    if (!team || !currentUser) return;
+    if (getMyRole(team.id) !== 'owner') { notAllowedForRole(); return; }
+    if (uid === currentUser.uid) { alert('❌ Нельзя менять роль самому себе'); return; }
+    const p = currentMembersProfiles[uid] || {};
+    const label = [p.displayName, p.lastName].filter(Boolean).join(' ').trim() || 'этого участника';
+    const roleNames = { owner: 'владельцем', admin: 'администратором', member: 'участником' };
+    if (!confirm(`Сделать ${label} ${roleNames[newRole]}?`)) return;
+    try {
+        await db.collection('teamRegistry').doc(team.id).collection('members').doc(uid).update({ role: newRole });
+        showToast('✅ Роль обновлена', 'success');
+    } catch (err) {
+        console.error('role change failed:', err);
+        showToast('⚠️ Не удалось изменить роль: ' + err.code, 'error');
+    }
+}
 async function kickTeamMember(uid) {
     const team = teams.find(t => t.id === currentMembersTeamId);
     if (!team || !currentUser) return;
@@ -158,8 +175,18 @@ function renderTeamMembersList() {
         const targetRole = (roles[r.uid] && roles[r.uid].role) || 'member';
         const roleLabel = targetRole === 'owner' ? 'владелец' : targetRole === 'admin' ? 'администратор' : '';
         const canKick = !isMe && targetRole !== 'owner' && (iAmOwner || (iAmAdmin && targetRole !== 'admin'));
-        const kickBtn = canKick ? `<button class="btn-danger" style="padding:6px 12px;font-size:12px;min-height:auto;border-radius:6px;" onclick="event.stopPropagation();kickTeamMember('${r.uid}')">Удалить</button>` : '';
-        const roleHtml = roleLabel ? `<div style="color:#888;font-size:12px;white-space:nowrap;">${roleLabel}</div>` : '';
+        const kickBtn = canKick ? `<button class="btn-danger" style="padding:6px 12px;font-size:12px;min-height:auto;border-radius:6px;" onclick="event.stopPropagation();kickTeamMember('${r.uid}')">Удалить</button>` : '';
+        let roleBtns = '';
+        if (iAmOwner && !isMe) {
+            if (targetRole === 'member') {
+                roleBtns = `<button class="btn-icon" onclick="event.stopPropagation();changeTeamMemberRole('${r.uid}','admin')" title="Сделать админом">⬆️</button><button class="btn-icon" onclick="event.stopPropagation();changeTeamMemberRole('${r.uid}','owner')" title="Сделать владельцем">👑</button>`;
+            } else if (targetRole === 'admin') {
+                roleBtns = `<button class="btn-icon" onclick="event.stopPropagation();changeTeamMemberRole('${r.uid}','owner')" title="Сделать владельцем">👑</button><button class="btn-icon" onclick="event.stopPropagation();changeTeamMemberRole('${r.uid}','member')" title="Снять админа">⬇️</button>`;
+            } else if (targetRole === 'owner') {
+                roleBtns = `<button class="btn-icon" onclick="event.stopPropagation();changeTeamMemberRole('${r.uid}','admin')" title="Снять с владельцев">⬇️</button>`;
+            }
+        }
+        const roleHtml = roleLabel ? `<div style="color:#888;font-size:12px;white-space:nowrap;">${roleLabel}</div>` : '';
         return `<div class="list-item" style="cursor:pointer;" onclick="openMemberProfile('${r.uid}')">
 <div class="item-left">
 ${avatarHtml}
@@ -168,6 +195,7 @@ ${avatarHtml}
 ${sub ? `<div class="item-sub">${escapeHtml(sub)}</div>` : ''}
 </div>
 ${roleHtml}
+${roleBtns}
 ${kickBtn}
 </div>
 </div>`;

@@ -28,6 +28,11 @@ html += `<div style="text-align: center; padding: 30px 20px; color: #888;">
 } else {
 teams.forEach(t => {
 const teamSetlists = setlists.filter(sl => sl.teamId === t.id && !sl.isArchived);
+const rolesForCount = teamRolesCache[t.id];
+const memberCount = rolesForCount ? Object.keys(rolesForCount).length : (t.members ? t.members.length : 1);
+const leaveOrDeleteBtn = memberCount > 1
+? `<button class="btn-icon" onclick="event.stopPropagation(); deleteTeam('${t.id}')" title="Покинуть" style="color: #ef5350;">🗑️</button>`
+: `<button class="btn-icon" onclick="event.stopPropagation(); deleteTeam('${t.id}')" title="Удалить команду" style="color: #ef5350;">🗑️</button>`;
 const avatarHtml = t.avatar
 ? `<img src="${t.avatar}" class="team-list-avatar" alt="">`
 : `<div class="team-list-avatar-placeholder">🎸</div>`;
@@ -36,14 +41,14 @@ html += `<div class="list-item" style="cursor: pointer;" onclick="openTeamFromLi
 ${avatarHtml}
 <div style="min-width: 0; flex: 1;">
 <div class="item-title">${escapeHtml(t.name)}</div>
-<div class="item-sub">Участники: ${teamRolesCache[t.id] ? Object.keys(teamRolesCache[t.id]).length : (t.members ? t.members.length : 0)}${t.password ? ' · 🔐' : ''}</div>
+<div class="item-sub">Участники: ${memberCount}${t.password ? ' · 🔐' : ''}</div>
 </div>
 </div>
 <div class="item-actions" style="display: flex; gap: 4px;">
 <button class="btn-icon" onclick="event.stopPropagation(); openTeamMembers('${t.id}')" title="Участники">👥</button>
 <button class="btn-icon" onclick="event.stopPropagation(); showTeamInvite('${t.id}')" title="Пригласить">🔗</button>
 <button class="btn-icon" onclick="event.stopPropagation(); editTeam('${t.id}')" title="Изменить">✏️</button>
-<button class="btn-icon" onclick="event.stopPropagation(); deleteTeam('${t.id}')" title="Удалить" style="color: #ef5350;">🗑️</button>
+${leaveOrDeleteBtn}
 </div>
 </div>`;
 });
@@ -89,6 +94,7 @@ container.innerHTML = `<img src="${e.target.result}" class="team-avatar-edit" al
 reader.readAsDataURL(file);
 }
 function editTeam(teamId) {
+if (getMyRole(teamId) === 'member') { notAllowedForRole(); return; }
 const team = teams.find(t => t.id === teamId);
 if (!team) return;
 editingTeamId = teamId;
@@ -158,6 +164,7 @@ finalizeSave(undefined);
 }
 }
 function showTeamInvite(teamId) {
+if (getMyRole(teamId) === 'member') { notAllowedForRole(); return; }
 const team = teams.find(t => t.id === teamId);
 if (!team) return;
 const baseUrl = window.location.origin + window.location.pathname;
@@ -188,13 +195,39 @@ alert('✅ Ссылка скопирована!');
 function deleteTeam(teamId) {
 const team = teams.find(t => t.id === teamId);
 if (!team) return;
+const roles = teamRolesCache[teamId];
+const memberCount = (roles && Object.keys(roles).length) || 2;
+if (memberCount > 1) {
+leaveTeamFlow(teamId, team);
+} else {
+deleteTeamPermanentlyFlow(teamId, team);
+}
+}
+function leaveTeamFlow(teamId, team) {
 const activeSetlists = setlists.filter(sl => sl.teamId === teamId && !sl.isArchived);
-let warning = `Команду «${team.name}»`;
+let warning = `Покинуть команду «${team.name}»?`;
 if (activeSetlists.length > 0) {
-warning += `\n⚠️ В команде ${activeSetlists.length} актуальных сет-листов — они тоже будут удалены!`;
+warning += `\n⚠️ Скопированные вами сет-листы этой команды останутся у вас, остальные пропадут из этого приложения.`;
 }
 showDeleteConfirm('team', teamId, warning, async () => {
 recentlyLeftTeams[teamId] = Date.now();
+if (db && currentUser && getMyRole(teamId) === 'owner') {
+const roles = teamRolesCache[teamId] || {};
+const others = Object.entries(roles).filter(([uid]) => uid !== currentUser.uid);
+const otherOwners = others.filter(([, r]) => r.role === 'owner');
+if (otherOwners.length === 0) {
+const admins = others.filter(([, r]) => r.role === 'admin').sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+const members = others.filter(([, r]) => r.role === 'member').sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+const successor = admins[0] || members[0];
+if (successor) {
+try {
+await db.collection('teamRegistry').doc(teamId).collection('members').doc(successor[0]).update({ role: 'owner' });
+} catch (err) {
+console.error('Не удалось передать владение:', err);
+}
+}
+}
+}
 setlists = setlists.filter(sl => sl.teamId !== teamId);
 songs = songs.filter(s => s.fromTeam !== teamId);
 teams = teams.filter(t => t.id !== teamId);
@@ -216,11 +249,47 @@ if (teamsIdx !== -1) {
 carouselActiveIndex = teamsIdx;
 activateCarouselItem(teamsIdx);
 }
-if (team.createdBy === currentUser.uid) {
-alert(`✅ Команда «${team.name}» удалена`);
-} else {
 alert(`✅ Вы покинули команду «${team.name}»`);
+});
 }
+function deleteTeamPermanentlyFlow(teamId, team) {
+const warning = `Удалить команду «${team.name}» безвозвратно?\n⚠️ Вы последний участник — все данные команды будут стёрты из облака.`;
+showDeleteConfirm('team', teamId, warning, async () => {
+if (!navigator.onLine) { alert('❌ Нужно подключение к интернету, чтобы удалить команду'); return; }
+if (db && currentUser) {
+try {
+const membersSnap = await db.collection('teamRegistry').doc(teamId).collection('members').get();
+const batch = db.batch();
+membersSnap.forEach(doc => batch.delete(doc.ref));
+batch.delete(db.collection('teamRegistry').doc(teamId).collection('private').doc('profiles'));
+batch.delete(db.collection('teamData').doc(teamId));
+batch.delete(db.collection('teamRegistry').doc(teamId));
+await batch.commit();
+} catch (err) {
+console.error('Не удалось полностью удалить команду из облака:', err);
+alert('⚠️ Не удалось удалить команду из облака: ' + err.code + '\nПопробуйте ещё раз.');
+return;
+}
+}
+recentlyLeftTeams[teamId] = Date.now();
+setlists = setlists.filter(sl => sl.teamId !== teamId);
+songs = songs.filter(s => s.fromTeam !== teamId);
+teams = teams.filter(t => t.id !== teamId);
+if (teamListenerUnsubs[teamId]) { teamListenerUnsubs[teamId](); delete teamListenerUnsubs[teamId]; }
+if (teamRegistryListenerUnsubs[teamId]) { teamRegistryListenerUnsubs[teamId](); delete teamRegistryListenerUnsubs[teamId]; }
+if (membershipWatchUnsubs[teamId]) { membershipWatchUnsubs[teamId](); delete membershipWatchUnsubs[teamId]; }
+if (teamRolesListenerUnsubs[teamId]) { teamRolesListenerUnsubs[teamId](); delete teamRolesListenerUnsubs[teamId]; }
+delete teamRolesCache[teamId];
+delete teamDataCache[teamId];
+saveToStorage();
+renderCarousel();
+currentHomeView = 'teams';
+const teamsIdx = carouselItems.findIndex(i => i.type === 'teams');
+if (teamsIdx !== -1) {
+carouselActiveIndex = teamsIdx;
+activateCarouselItem(teamsIdx);
+}
+alert(`✅ Команда «${team.name}» удалена`);
 });
 }
 function copyTeamInviteId() {
@@ -349,6 +418,7 @@ showTeamsView();
 alert(`✅ Вы присоединились к команде «${registry.name}»!`);
 }
 function openSetlistModalForTeam(teamId) {
+if (getMyRole(teamId) === 'member') { notAllowedForRole(); return; }
 document.getElementById('sl-date').value = getNextSundayDate();
 document.getElementById('sl-time').value = '11:00';
 document.getElementById('sl-name').value = '';
@@ -477,6 +547,7 @@ db.collection('teamRegistry').doc(teamId).collection('members').doc(currentUser.
 }
 if (currentMembersTeamId === teamId && typeof renderTeamMembersList === 'function') renderTeamMembersList();
 if (currentTeamDetailId === teamId) showTeamDetailView(teamId);
+if (currentHomeView === 'teams') showTeamsView();
 }, err => console.error('roles listener error:', err));
 }
 function getMyRole(teamId) {

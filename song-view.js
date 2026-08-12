@@ -119,7 +119,12 @@ swipeHint.style.display = showHomeNav ? 'block' : 'none';
 }
 applyBodyClasses(); updateToggleButtonsUI(); toolbarExpanded = false; const row3 = document.getElementById('toolbar-row-3'); const row4 = document.getElementById('toolbar-row-4'); const icon = document.getElementById('expand-icon'); if (row3) row3.style.display = 'none'; if (row4) row4.style.display = 'none'; if (icon) icon.innerText = '⬇️';
 const sl = slId ? setlists.find(x => x.id === slId) : null; const item = sl ? sl.songs.find(x => x.id === id) : null;
-renderSongContent((item && item.chordpro) || s.chordpro, originalKey, currentKey, currentCapo);
+let effectiveChordpro = (item && item.chordpro) || s.chordpro;
+if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') {
+const pv = personalViewSettings[sl.id + '_' + id];
+if (pv && pv.chordpro !== undefined) effectiveChordpro = pv.chordpro;
+}
+renderSongContent(effectiveChordpro, originalKey, currentKey, currentCapo);
 showPage('page-song-view'); updatePdfOrCopyButton();
 requestAnimationFrame(() => {
 setTimeout(() => {
@@ -135,10 +140,59 @@ function updatePdfOrCopyButton() { const btn = document.getElementById('btn-pdf-
 function handlePdfOrCopy() { if (window.innerWidth <= 768) copySongText(); else downloadPdf(); }
 function copySongText() { const s = songs.find(x => x.id === currentSongId); if (!s) return; let chordpro = s.chordpro; if (currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item && item.chordpro) chordpro = item.chordpro; } let result = `${s.title}\n`; if (s.author) result += `Автор: ${s.author}\n`; result += `Тональность: ${currentKey}\n`; chordpro.split('\n').forEach(line => { const t = line.trim(); if (t === '') { result += '\n'; return; } const p = parseMixedLine(t); if (p.chords && p.text) result += `${p.chords}\n${p.text}\n`; else if (p.chords) result += `${p.chords}\n`; else if (p.text) result += `${p.text}\n`; }); if (navigator.clipboard?.writeText) navigator.clipboard.writeText(result).then(() => alert('✅ Скопировано!')).catch(() => fallbackCopyText(result)); else fallbackCopyText(result); }
 function fallbackCopyText(text) { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); alert('✅ Скопировано!'); } catch { alert('❌ Не удалось'); } document.body.removeChild(ta); }
-function toggleInlineEdit() { if (isInlineEditing) { cancelInlineEdit(); return; } const s = songs.find(x => x.id === currentSongId); if (!s) return; let text = s.chordpro; if (currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item && item.chordpro) text = item.chordpro; } const ta = document.getElementById('inline-edit-textarea'); ta.value = text; ta.style.fontSize = fontSize + 'px'; ta.style.lineHeight = '1.4'; document.getElementById('inline-edit-container').style.display = 'block'; document.getElementById('song-view-content').style.display = 'none'; isInlineEditing = true; }
+function toggleInlineEdit() {
+if (isInlineEditing) { cancelInlineEdit(); return; }
+const s = songs.find(x => x.id === currentSongId);
+if (!s) return;
+let text = s.chordpro;
+if (currentSlId) {
+const sl = setlists.find(x => x.id === currentSlId);
+const item = sl.songs.find(x => x.id === currentSongId);
+if (item && item.chordpro) text = item.chordpro;
+if (sl.teamId && getMyRole(sl.teamId) === 'member') {
+const pv = personalViewSettings[sl.id + '_' + currentSongId];
+if (pv && pv.chordpro !== undefined) text = pv.chordpro;
+}
+}
+const ta = document.getElementById('inline-edit-textarea');
+ta.value = text;
+ta.style.fontSize = fontSize + 'px';
+ta.style.lineHeight = '1.4';
+document.getElementById('inline-edit-container').style.display = 'block';
+document.getElementById('song-view-content').style.display = 'none';
+isInlineEditing = true;
+}
 function cancelInlineEdit() { document.getElementById('inline-edit-container').style.display = 'none'; document.getElementById('song-view-content').style.display = 'block'; isInlineEditing = false; }
 function resizeInlineEdit(delta) { fontSize = Math.max(8, Math.min(32, fontSize + delta)); document.getElementById('inline-edit-textarea').style.fontSize = fontSize + 'px'; }
-function saveInlineEdit() { const newChordpro = document.getElementById('inline-edit-textarea').value; if (currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item) { item.chordpro = newChordpro; saveToStorage(); alert('✅ Сохранено локально!'); } } else { const song = songs.find(x => x.id === currentSongId); if (song) { song.chordpro = newChordpro; saveToStorage(); alert('✅ Песня сохранена!'); } } cancelInlineEdit(); openSongView(currentSongId, currentSlId); }
+function saveInlineEdit() {
+const newChordpro = document.getElementById('inline-edit-textarea').value;
+if (currentSlId) {
+const sl = setlists.find(x => x.id === currentSlId);
+const item = sl.songs.find(x => x.id === currentSongId);
+if (item) {
+if (sl.teamId && getMyRole(sl.teamId) === 'member') {
+const key = sl.id + '_' + currentSongId;
+personalViewSettings[key] = { ...(personalViewSettings[key] || {}), chordpro: newChordpro };
+saveToStorage();
+alert('✅ Сохранено только у вас — эта правка не будет видна другим участникам команды');
+} else {
+item.chordpro = newChordpro;
+saveToStorage();
+if (sl.teamId) {
+syncSetlistIfTeam(sl);
+alert('✅ Сохранено и отправлено в команду!');
+} else {
+alert('✅ Сохранено локально!');
+}
+}
+}
+} else {
+const song = songs.find(x => x.id === currentSongId);
+if (song) { song.chordpro = newChordpro; saveToStorage(); alert('✅ Песня сохранена!'); }
+}
+cancelInlineEdit();
+openSongView(currentSongId, currentSlId);
+}
 function saveAllSettings() {
 if (!currentSongId) { alert("❌ Ошибка"); return; }
 if (currentSlId) {

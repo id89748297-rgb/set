@@ -270,7 +270,23 @@ return;
 showPage('page-home');
 setCarouselIndex(1, true);
 }
-function updateSongOrder(songId, newOrderStr) { const sl = setlists.find(x => x.id === currentSlId); if (!sl) return; const newOrder = parseInt(newOrderStr); if (isNaN(newOrder) || newOrder < 1) { renderSlSongs(); return; } const ci = sl.songs.findIndex(x => x.id === songId); if (ci === -1) return; const ti = Math.min(Math.max(0, newOrder - 1), sl.songs.length - 1); if (ci !== ti) { const [moved] = sl.songs.splice(ci, 1); sl.songs.splice(ti, 0, moved); saveToStorage(); renderSlSongs(); } }
+function updateSongOrder(songId, newOrderStr) {
+const sl = setlists.find(x => x.id === currentSlId);
+if (!sl) return;
+if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); renderSlSongs(); return; }
+const newOrder = parseInt(newOrderStr);
+if (isNaN(newOrder) || newOrder < 1) { renderSlSongs(); return; }
+const ci = sl.songs.findIndex(x => x.id === songId);
+if (ci === -1) return;
+const ti = Math.min(Math.max(0, newOrder - 1), sl.songs.length - 1);
+if (ci !== ti) {
+const [moved] = sl.songs.splice(ci, 1);
+sl.songs.splice(ti, 0, moved);
+saveToStorage();
+syncSetlistIfTeam(sl);
+renderSlSongs();
+}
+}
 function handleOrderInputFocus(input, originalValue) { input.dataset.originalValue = originalValue; input.value = ''; }
 function handleOrderInputBlur(input, songId) {
 const newValue = input.value.trim();
@@ -295,6 +311,7 @@ e.preventDefault();
 const t = e.target.closest('.list-item');
 if (!t || t === div) return;
 t.classList.remove('drag-over');
+if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
 const fi = parseInt(e.dataTransfer.getData('text/plain'));
 const ti = parseInt(t.dataset.index);
 if (!isNaN(fi) && !isNaN(ti) && fi !== ti) {
@@ -309,9 +326,24 @@ div.addEventListener('dragend', () => { div.classList.remove('dragging'); docume
 div.onclick = (e) => { if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 'SELECT' && e.target.tagName !== 'INPUT' && !e.target.closest('button') && !e.target.closest('select') && !e.target.closest('input')) { homeSongIndex = idx; openSongView(item.id, currentSlId); } };
 list.appendChild(div); });
 }
-function confirmRemoveFromSl(songId, songName) { showDeleteConfirm('remove', songId, `Песню "${songName}" из сет-листа`, () => { const sl = setlists.find(x => x.id === currentSlId); sl.songs = sl.songs.filter(x => x.id !== songId); saveToStorage(); syncSetlistIfTeam(sl); renderSlSongs(); }); }
+function confirmRemoveFromSl(songId, songName) {
+const sl = setlists.find(x => x.id === currentSlId);
+if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
+showDeleteConfirm('remove', songId, `Песню "${songName}" из сет-листа`, () => {
+sl.songs = sl.songs.filter(x => x.id !== songId);
+saveToStorage();
+syncSetlistIfTeam(sl);
+renderSlSongs();
+});
+}
 function changeSongKeyInSetlist(songId, newKey) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === songId); if (item) { item.key = newKey; saveToStorage(); syncSetlistIfTeam(sl); } }
-function openAddSongToSlModal() { document.getElementById('add-song-search').value = ''; renderAddSongList(); document.getElementById('modal-add-song').classList.add('show'); }
+function openAddSongToSlModal() {
+const sl = setlists.find(x => x.id === currentSlId);
+if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
+document.getElementById('add-song-search').value = '';
+renderAddSongList();
+document.getElementById('modal-add-song').classList.add('show');
+}
 function renderAddSongList() {
 const q = document.getElementById('add-song-search').value.toLowerCase(); const sl = setlists.find(x => x.id === currentSlId); const list = document.getElementById('add-song-list'); list.innerHTML = '';
 const filtered = songs.filter(s => !sl.songs.find(x => x.id === s.id) && (s.title.toLowerCase().includes(q) || (s.chordpro && s.chordpro.toLowerCase().includes(q)) || (s.author && s.author.toLowerCase().includes(q))));
