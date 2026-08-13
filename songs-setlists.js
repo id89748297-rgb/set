@@ -1,5 +1,10 @@
 function loadFromStorage() {
 try { songs = JSON.parse(localStorage.getItem('clc_songs') || '[]'); setlists = JSON.parse(localStorage.getItem('clc_setlists') || '[]'); sectionNotes = JSON.parse(localStorage.getItem('clc_section_notes') || '{}'); inlineComments = JSON.parse(localStorage.getItem('clc_inline_comments') || '{}'); teams = JSON.parse(localStorage.getItem('clc_teams') || '[]'); personalViewSettings = JSON.parse(localStorage.getItem('clc_personal_view_settings') || '{}'); } catch { songs = []; setlists = []; sectionNotes = {}; inlineComments = {}; teams = []; personalViewSettings = {}; }
+try {
+const teamCache = JSON.parse(localStorage.getItem('clc_team_cache') || '{}');
+if (teamCache.songs) songs = songs.concat(teamCache.songs);
+if (teamCache.setlists) setlists = setlists.concat(teamCache.setlists);
+} catch {}
 const savedTheme = localStorage.getItem('clc_theme');
 if (savedTheme === 'light') {
 document.body.classList.remove('dark');
@@ -32,7 +37,7 @@ if (savedSort) { const sel = document.getElementById('songs-sort'); if (sel) sel
 const savedCategoryFilter = localStorage.getItem('clc_category_filter');
 if (savedCategoryFilter) { const sel = document.getElementById('category-filter'); if (sel) sel.value = savedCategoryFilter; }
 }
-function saveToStorage() { localStorage.setItem('clc_songs', JSON.stringify(songs.filter(s => !s.fromTeam))); localStorage.setItem('clc_setlists', JSON.stringify(setlists.filter(sl => !sl.fromTeamSync))); localStorage.setItem('clc_section_notes', JSON.stringify(sectionNotes)); localStorage.setItem('clc_inline_comments', JSON.stringify(inlineComments)); localStorage.setItem('clc_teams', JSON.stringify(teams)); localStorage.setItem('clc_personal_view_settings', JSON.stringify(personalViewSettings)); }
+function saveToStorage() { localStorage.setItem('clc_songs', JSON.stringify(songs.filter(s => !s.fromTeam))); localStorage.setItem('clc_setlists', JSON.stringify(setlists.filter(sl => !sl.fromTeamSync))); localStorage.setItem('clc_section_notes', JSON.stringify(sectionNotes)); localStorage.setItem('clc_inline_comments', JSON.stringify(inlineComments)); localStorage.setItem('clc_teams', JSON.stringify(teams)); localStorage.setItem('clc_personal_view_settings', JSON.stringify(personalViewSettings)); localStorage.setItem('clc_team_cache', JSON.stringify({ songs: songs.filter(s => s.fromTeam), setlists: setlists.filter(sl => sl.fromTeamSync) })); }
 function updateThemeButtons(icon) {
 document.querySelectorAll('.theme-toggle').forEach(b => b.innerText = icon);
 }
@@ -193,7 +198,13 @@ async function saveSetlist() {
 }
 function openEditSetlistModal(id) { const sl = setlists.find(x => x.id === id); document.getElementById('edit-sl-date').value = sl.date; document.getElementById('edit-sl-time').value = sl.time || ''; document.getElementById('edit-sl-name').value = sl.name; currentSlId = id; document.getElementById('modal-edit-setlist').classList.add('show'); }
 function saveEditSetlist() { const date = document.getElementById('edit-sl-date').value; const time = document.getElementById('edit-sl-time').value; const name = document.getElementById('edit-sl-name').value; if (!name || !date) return; const sl = setlists.find(x => x.id === currentSlId); if (sl) { sl.date = date; sl.time = time || ''; sl.name = name; } saveToStorage(); closeModal('modal-edit-setlist'); renderSetlists(); if (document.getElementById('page-setlist-detail').classList.contains('active')) { document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${escapeHtml(sl.name)}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`; renderSlSongs(); } }
-function showSetlistDeleteChoice(id, name, isVl) { pendingSetlistAction = { id, name, isVl }; document.getElementById('delete-setlist-name').innerText = `"${name}"`; document.getElementById('modal-delete-setlist-choice').classList.add('show'); }
+function showSetlistDeleteChoice(id, name, isVl) {
+const sl = setlists.find(x => x.id === id);
+if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
+pendingSetlistAction = { id, name, isVl };
+document.getElementById('delete-setlist-name').innerText = `"${name}"`;
+document.getElementById('modal-delete-setlist-choice').classList.add('show');
+}
 function archiveSetlistChoice() {
 if (!pendingSetlistAction) return;
 const sl = setlists.find(x => x.id === pendingSetlistAction.id);
@@ -240,7 +251,13 @@ if (teamId) showTeamDetailView(teamId);
 closeModal('modal-delete-setlist-choice');
 pendingSetlistAction = null;
 }
-function restoreSetlist(slId) { pendingSetlistAction = { id: slId }; document.getElementById('archive-setlist-name').innerText = `"${setlists.find(x => x.id === slId).name}"`; document.getElementById('modal-archive-setlist').classList.add('show'); }
+function restoreSetlist(slId) {
+const sl = setlists.find(x => x.id === slId);
+if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
+pendingSetlistAction = { id: slId };
+document.getElementById('archive-setlist-name').innerText = `"${sl.name}"`;
+document.getElementById('modal-archive-setlist').classList.add('show');
+}
 function restoreSetlistChoice() {
 if (!pendingSetlistAction) return;
 const sl = setlists.find(x => x.id === pendingSetlistAction.id);
@@ -255,7 +272,18 @@ if (sl.teamId) showTeamDetailView(sl.teamId);
 closeModal('modal-archive-setlist');
 pendingSetlistAction = null;
 }
-function archiveCurrentSetlist() { const sl = setlists.find(x => x.id === currentSlId); if (!sl) return; if (confirm(`Отправить "${sl.name}" в архив?`)) { sl.isArchived = true; if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = true; } saveToStorage(); syncSetlistIfTeam(sl); goBackFromSetlistDetail(); } }
+function archiveCurrentSetlist() {
+const sl = setlists.find(x => x.id === currentSlId);
+if (!sl) return;
+if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
+if (confirm(`Отправить "${sl.name}" в архив?`)) {
+sl.isArchived = true;
+if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = true; }
+saveToStorage();
+syncSetlistIfTeam(sl);
+goBackFromSetlistDetail();
+}
+}
 function openSetlistDetail(id) { currentSlId = id; const sl = setlists.find(x => x.id === id); document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${escapeHtml(sl.name)}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`; document.getElementById('sl-subtitle').innerText = 'Сет-лист'; renderSlSongs(); showPage('page-setlist-detail'); }
 function goBackFromSetlistDetail() {
 const sl = setlists.find(x => x.id === currentSlId);

@@ -105,10 +105,6 @@ async function changeTeamMemberRole(uid, newRole) {
     if (!team || !currentUser) return;
     if (getMyRole(team.id) !== 'owner') { notAllowedForRole(); return; }
     if (uid === currentUser.uid) { alert('❌ Нельзя менять роль самому себе'); return; }
-    const p = currentMembersProfiles[uid] || {};
-    const label = [p.displayName, p.lastName].filter(Boolean).join(' ').trim() || 'этого участника';
-    const roleNames = { owner: 'владельцем', admin: 'администратором', member: 'участником' };
-    if (!confirm(`Сделать ${label} ${roleNames[newRole]}?`)) return;
     try {
         await db.collection('teamRegistry').doc(team.id).collection('members').doc(uid).update({ role: newRole });
         showToast('✅ Роль обновлена', 'success');
@@ -141,6 +137,46 @@ async function kickTeamMember(uid) {
     }
 }
  
+function closeRoleMenu() {
+    const menu = document.getElementById('role-menu-popup');
+    if (menu) menu.remove();
+    document.removeEventListener('click', closeRoleMenu);
+}
+function openRoleMenu(uid, x, y) {
+    closeRoleMenu();
+    const team = teams.find(t => t.id === currentMembersTeamId);
+    if (!team || getMyRole(team.id) !== 'owner') return;
+    if (currentUser && uid === currentUser.uid) return;
+    const menu = document.createElement('div');
+    menu.id = 'role-menu-popup';
+    menu.style.cssText = 'position:fixed;background:#2a2a2a;border-radius:10px;overflow:hidden;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.5);min-width:150px;';
+    const opts = [['owner', 'Владелец'], ['admin', 'Админ'], ['member', 'Участник']];
+    menu.innerHTML = opts.map(([val, label]) =>
+        `<div style="padding:13px 18px;color:#eee;font-size:15px;" onclick="event.stopPropagation();selectMemberRole('${uid}','${val}')">${label}</div>`
+    ).join('<div style="height:1px;background:rgba(255,255,255,0.1);"></div>');
+    document.body.appendChild(menu);
+    menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - 160) + 'px';
+    setTimeout(() => document.addEventListener('click', closeRoleMenu), 0);
+}
+function selectMemberRole(uid, role) {
+    closeRoleMenu();
+    changeTeamMemberRole(uid, role);
+}
+function startRolePress(e, uid) {
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    window.__rolePressFired = false;
+    window.__rolePressTimer = setTimeout(() => {
+        window.__rolePressFired = true;
+        if (navigator.vibrate) navigator.vibrate(30);
+        openRoleMenu(uid, x, y);
+    }, 800);
+}
+function cancelRolePress() {
+    clearTimeout(window.__rolePressTimer);
+}
+ 
 function renderTeamMembersList() {
     const team = teams.find(t => t.id === currentMembersTeamId);
     const list = document.getElementById('team-members-list');
@@ -171,31 +207,19 @@ function renderTeamMembersList() {
             ? `<img src="${escapeHtml(r.p.avatar)}" class="team-member-avatar" alt="">`
             : `<div class="team-member-avatar-placeholder">👤</div>`;
         const isMe = currentUser && r.uid === currentUser.uid;
-        const sub = [r.p.city, r.p.country].filter(Boolean).join(', ');
         const targetRole = (roles[r.uid] && roles[r.uid].role) || 'member';
-        const roleLabel = targetRole === 'owner' ? 'владелец' : targetRole === 'admin' ? 'администратор' : '';
+        const roleText = targetRole === 'owner' ? 'Владелец' : targetRole === 'admin' ? 'Админ' : '';
         const canKick = !isMe && targetRole !== 'owner' && (iAmOwner || (iAmAdmin && targetRole !== 'admin'));
-        const kickBtn = canKick ? `<button class="btn-danger" style="padding:6px 12px;font-size:12px;min-height:auto;border-radius:6px;" onclick="event.stopPropagation();kickTeamMember('${r.uid}')">Удалить</button>` : '';
-        let roleBtns = '';
-        if (iAmOwner && !isMe) {
-            if (targetRole === 'member') {
-                roleBtns = `<button class="btn-icon" onclick="event.stopPropagation();changeTeamMemberRole('${r.uid}','admin')" title="Сделать админом">⬆️</button><button class="btn-icon" onclick="event.stopPropagation();changeTeamMemberRole('${r.uid}','owner')" title="Сделать владельцем">👑</button>`;
-            } else if (targetRole === 'admin') {
-                roleBtns = `<button class="btn-icon" onclick="event.stopPropagation();changeTeamMemberRole('${r.uid}','owner')" title="Сделать владельцем">👑</button><button class="btn-icon" onclick="event.stopPropagation();changeTeamMemberRole('${r.uid}','member')" title="Снять админа">⬇️</button>`;
-            } else if (targetRole === 'owner') {
-                roleBtns = `<button class="btn-icon" onclick="event.stopPropagation();changeTeamMemberRole('${r.uid}','admin')" title="Снять с владельцев">⬇️</button>`;
-            }
-        }
-        const roleHtml = roleLabel ? `<div style="color:#888;font-size:12px;white-space:nowrap;">${roleLabel}</div>` : '';
-        return `<div class="list-item" style="cursor:pointer;" onclick="openMemberProfile('${r.uid}')">
+        const kickBtn = canKick ? `<button class="btn-icon" onclick="event.stopPropagation();kickTeamMember('${r.uid}')" title="Удалить">🗑️</button>` : '';
+        const canChangeRole = iAmOwner && !isMe;
+        const pressAttrs = canChangeRole ? `ontouchstart="startRolePress(event,'${r.uid}')" ontouchend="cancelRolePress()" ontouchcancel="cancelRolePress()" onmousedown="startRolePress(event,'${r.uid}')" onmouseup="cancelRolePress()" onmouseleave="cancelRolePress()"` : '';
+        return `<div class="list-item" style="cursor:pointer;" ${pressAttrs} onclick="if(window.__rolePressFired){window.__rolePressFired=false;return;} openMemberProfile('${r.uid}')">
 <div class="item-left">
 ${avatarHtml}
 <div style="min-width:0;flex:1;">
 <div class="item-title">${escapeHtml(r.label)}${isMe ? ' <span style="color:#4caf50;font-size:11px;">(вы)</span>' : ''}</div>
-${sub ? `<div class="item-sub">${escapeHtml(sub)}</div>` : ''}
+${roleText ? `<div class="item-sub">${roleText}</div>` : ''}
 </div>
-${roleHtml}
-${roleBtns}
 ${kickBtn}
 </div>
 </div>`;

@@ -109,8 +109,13 @@ async function loginWithEmail() {
 
 // Register with Email/Password
 async function registerWithEmail() {
+const name = document.getElementById('register-name').value.trim();
 const email = document.getElementById('login-email').value.trim();
 const password = document.getElementById('login-password').value;
+if (!name) {
+showAuthError('Введите имя');
+return;
+}
 if (!email || !password) {
 showAuthError('Заполните все поля');
 return;
@@ -122,12 +127,14 @@ return;
 try {
 // 1. Создаем пользователя в Firebase Auth
 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+// 1.5 Сохраняем имя прямо в аккаунт Firebase Auth
+await userCredential.user.updateProfile({ displayName: name });
 // 2. Отправляем письмо для подтверждения (требует интернет!)
 await userCredential.user.sendEmailVerification();
 alert('✅ Аккаунт создан! Пожалуйста, проверьте почту и перейдите по ссылке для подтверждения.');
 console.log('📧 Письмо для подтверждения отправлено на', email);
-// ❗ НЕ сохраняем данные в Firestore здесь! 
-// Данные попадут в облако автоматически через saveToStorage() 
+// ❗ НЕ сохраняем данные в Firestore здесь! 
+// Данные попадут в облако автоматически через saveToStorage() 
 // только ПОСЛЕ того, как onAuthStateChanged разрешит вход.
 } catch (error) {
 showAuthError(getAuthErrorMessage(error.code));
