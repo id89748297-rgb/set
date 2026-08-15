@@ -14,16 +14,17 @@ async function syncPublicProfileToTeams() {
         const userDoc = await db.collection('users').doc(currentUser.uid).get();
         const data = userDoc.exists ? userDoc.data() : {};
         const localAvatar = localStorage.getItem('clc_avatar_' + currentUser.uid);
-        const publicProfile = {
-            displayName: data.displayName || currentUser.displayName || '',
-            lastName: data.lastName || '',
-            gender: data.gender || '',
-            birthDate: data.birthDate || '',
-            country: data.country || '',
-            city: data.city || '',
-            avatar: localAvatar || data.avatar || currentUser.photoURL || null,
-            updatedAt: Date.now()
-        };
+       const publicProfile = {
+    displayName: data.displayName || currentUser.displayName || '',
+    lastName: data.lastName || '',
+    gender: data.gender || '',
+    birthDate: data.birthDate || '',
+    country: data.country || '',
+    city: data.city || '',
+    aboutMe: data.aboutMe || '',
+    avatar: localAvatar || data.avatar || currentUser.photoURL || null,
+    updatedAt: Date.now()
+};
         const myTeams = (teams || []).filter(t => t && t.id);
         await Promise.all(myTeams.map(t =>
             db.collection('teamRegistry').doc(t.id).collection('private').doc('profiles')
@@ -57,42 +58,48 @@ async function ensureTeamMemberships() {
 }
  
 function openTeamMembers(teamId) {
-    const team = teams.find(t => t.id === teamId);
-    if (!team) return;
-    currentMembersTeamId = teamId;
-    currentMembersProfiles = {};
-    currentMembersIds = team.members || [];
-    document.getElementById('team-members-name').innerText = team.name;
-    const avatarEl = document.getElementById('team-members-avatar');
-    avatarEl.innerHTML = team.avatar ? `<img src="${team.avatar}" alt="">` : '🎸';
-    const searchInput = document.getElementById('team-members-search');
-    searchInput.value = '';
-    document.getElementById('team-members-list').innerHTML = '<div style="text-align:center;color:#888;padding:30px;">Загрузка...</div>';
-    document.getElementById('modal-team-members').classList.add('show');
-   if (!db || !currentUser) { renderTeamMembersList(); return; }
-    db.collection('teamRegistry').doc(teamId).get()
-        .then(regDoc => {
-            if (regDoc.exists) {
-                const regData = regDoc.data();
-                if (regData.name) { team.name = regData.name; document.getElementById('team-members-name').innerText = regData.name; }
-                if (regData.avatar !== undefined) { team.avatar = regData.avatar; avatarEl.innerHTML = regData.avatar ? `<img src="${regData.avatar}" alt="">` : '🎸'; }
-            }
-            // Список участников — из подколлекции members (надёжный источник истины,
-            // в отличие от устаревшего поля-массива members на самом документе).
-            return db.collection('teamRegistry').doc(teamId).collection('members').get();
-        })
-        .then(membersSnap => {
-            currentMembersIds = membersSnap.docs.map(d => d.id);
-            return db.collection('teamRegistry').doc(teamId).collection('private').doc('profiles').get();
-        })
-        .then(doc => {
-            currentMembersProfiles = doc.exists ? (doc.data() || {}) : {};
-            renderTeamMembersList();
-        })
-        .catch(err => {
-            console.error('Не удалось загрузить участников команды:', err);
-            document.getElementById('team-members-list').innerHTML = '<div style="text-align:center;color:#ef5350;padding:30px;">Не удалось загрузить участников</div>';
-        });
+    const team = teams.find(t => t.id === teamId);
+    if (!team) return;
+    currentMembersTeamId = teamId;
+    let mCache = {};
+    try { mCache = JSON.parse(localStorage.getItem('clc_team_members_cache') || '{}'); } catch {}
+    const cached = mCache[teamId];
+    currentMembersProfiles = cached ? cached.profiles : {};
+    currentMembersIds = cached ? cached.ids : (team.members || []);
+    document.getElementById('team-members-name').innerText = team.name;
+    const avatarEl = document.getElementById('team-members-avatar');
+    avatarEl.innerHTML = team.avatar ? `<img src="${team.avatar}" alt="">` : '🎸';
+    const searchInput = document.getElementById('team-members-search');
+    searchInput.value = '';
+    if (cached) { renderTeamMembersList(); } else { document.getElementById('team-members-list').innerHTML = '<div style="text-align:center;color:#888;padding:30px;">Загрузка...</div>'; }
+    document.getElementById('modal-team-members').classList.add('show');
+   if (!db || !currentUser) { renderTeamMembersList(); return; }
+    db.collection('teamRegistry').doc(teamId).get()
+        .then(regDoc => {
+            if (regDoc.exists) {
+                const regData = regDoc.data();
+                if (regData.name) { team.name = regData.name; document.getElementById('team-members-name').innerText = regData.name; }
+                if (regData.avatar !== undefined) { team.avatar = regData.avatar; avatarEl.innerHTML = regData.avatar ? `<img src="${regData.avatar}" alt="">` : '🎸'; }
+            }
+            return db.collection('teamRegistry').doc(teamId).collection('members').get();
+        })
+        .then(membersSnap => {
+            currentMembersIds = membersSnap.docs.map(d => d.id);
+            return db.collection('teamRegistry').doc(teamId).collection('private').doc('profiles').get();
+        })
+        .then(doc => {
+            currentMembersProfiles = doc.exists ? (doc.data() || {}) : {};
+            renderTeamMembersList();
+            try {
+                const c = JSON.parse(localStorage.getItem('clc_team_members_cache') || '{}');
+                c[teamId] = { ids: currentMembersIds, profiles: currentMembersProfiles };
+                localStorage.setItem('clc_team_members_cache', JSON.stringify(c));
+            } catch {}
+        })
+        .catch(err => {
+            console.error('Не удалось загрузить участников команды:', err);
+            if (!cached) document.getElementById('team-members-list').innerHTML = '<div style="text-align:center;color:#ef5350;padding:30px;">Не удалось загрузить участников</div>';
+        });
 }
  
 function closeTeamMembers() {
@@ -105,6 +112,7 @@ async function changeTeamMemberRole(uid, newRole) {
     if (!team || !currentUser) return;
     if (getMyRole(team.id) !== 'owner') { notAllowedForRole(); return; }
     if (uid === currentUser.uid) { alert('❌ Нельзя менять роль самому себе'); return; }
+    if (team.createdBy && uid === team.createdBy) { alert('❌ Нельзя изменить роль создателя команды'); return; }
     try {
         await db.collection('teamRegistry').doc(team.id).collection('members').doc(uid).update({ role: newRole });
         showToast('✅ Роль обновлена', 'success');
@@ -217,7 +225,7 @@ function renderTeamMembersList() {
 <div class="item-left">
 ${avatarHtml}
 <div style="min-width:0;flex:1;">
-<div class="item-title">${escapeHtml(r.label)}${isMe ? ' <span style="color:#4caf50;font-size:11px;">(вы)</span>' : ''}</div>
+<div class="item-title">${escapeHtml(r.label)}${team.createdBy && r.uid === team.createdBy ? ' ❤️' : ''}${isMe ? ' <span style="color:#4caf50;font-size:11px;">(вы)</span>' : ''}</div>
 ${roleText ? `<div class="item-sub">${roleText}</div>` : ''}
 </div>
 ${kickBtn}
@@ -228,10 +236,15 @@ ${kickBtn}
  
 function formatBirthDateForProfile(dateString) {
     try {
-        const d = new Date(dateString);
-        if (isNaN(d.getTime())) return dateString;
+        const parts = dateString.split('-');
+        let mm, dd;
+        if (parts.length === 3) { mm = parts[1]; dd = parts[2]; }
+        else if (parts.length === 2) { mm = parts[0]; dd = parts[1]; }
+        else return dateString;
+        const monthIdx = parseInt(mm, 10) - 1;
+        if (isNaN(monthIdx) || monthIdx < 0 || monthIdx > 11) return dateString;
         const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
-        return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+        return `${parseInt(dd, 10)} ${months[monthIdx]}`;
     } catch { return dateString; }
 }
  
@@ -253,8 +266,10 @@ function openMemberProfile(uid) {
         ['🌍 Страна', p.country || ''],
         ['🏙 Город', p.city || '']
     ].filter(f => f[1]);
+    const hadAnyField = fields.length > 0;
+    fields.push(['📝 О себе', p.aboutMe ? p.aboutMe : 'пусто']);
     const details = document.getElementById('member-profile-details');
-    if (fields.length === 0) {
+    if (!hadAnyField && !p.aboutMe) {
         details.innerHTML = '<div style="text-align:center;color:#888;padding:15px;">Участник пока не заполнил профиль</div>';
     } else {
         details.innerHTML = fields.map(f =>

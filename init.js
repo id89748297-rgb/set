@@ -55,7 +55,9 @@ async function saveProfileChanges() {
 const name = document.getElementById('profile-name-input').value.trim();
 const lastname = document.getElementById('profile-lastname-input').value.trim();
 const gender = document.getElementById('profile-gender-input').value;
-const birthDate = document.getElementById('profile-birthday-input').value;
+const bDay = document.getElementById('profile-birthday-day').value;
+const bMonth = document.getElementById('profile-birthday-month').value;
+const birthDate = (bDay && bMonth) ? (bMonth + '-' + bDay) : '';
 const country = document.getElementById('profile-country-input').value.trim();
 const city = document.getElementById('profile-city-input').value.trim();
 const about = document.getElementById('profile-about-input').value.trim();

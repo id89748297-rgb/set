@@ -5,6 +5,7 @@ const teamCache = JSON.parse(localStorage.getItem('clc_team_cache') || '{}');
 if (teamCache.songs) songs = songs.concat(teamCache.songs);
 if (teamCache.setlists) setlists = setlists.concat(teamCache.setlists);
 } catch {}
+try { teamRolesCache = JSON.parse(localStorage.getItem('clc_team_roles_cache') || '{}'); } catch {}
 const savedTheme = localStorage.getItem('clc_theme');
 if (savedTheme === 'light') {
 document.body.classList.remove('dark');
@@ -179,10 +180,20 @@ function openSetlistModal() { document.getElementById('sl-date').value = getCurr
 async function saveSetlist() {
     const date = document.getElementById('sl-date').value;
     const time = document.getElementById('sl-time').value;
-    const name = document.getElementById('sl-name').value;
-    if (!name || !date) return;
-    const newId = getNextId(setlists);
+    let name = document.getElementById('sl-name').value.trim();
+    if (!name) name = 'Служение';
+    if (!date) return;
     const teamId = document.getElementById('modal-setlist').dataset.teamId || null;
+    const duplicate = setlists.find(sl => (sl.teamId || null) === teamId && sl.date === date && (sl.time || '') === (time || '') && sl.name.trim().toLowerCase() === name.toLowerCase());
+    if (duplicate) {
+        if (!confirm(`Сет-лист «${name}» на эту дату и время уже существует. Заменить его новым?`)) return;
+        setlists = setlists.filter(sl => sl.id !== duplicate.id);
+        if (duplicate.teamId) {
+            try { await removeSetlistFromTeamData(duplicate.id, duplicate.teamId); } catch (err) { console.error('Не удалось удалить старый сет-лист из команды:', err); }
+        }
+        saveToStorage();
+    }
+    const newId = getNextId(setlists);
     const newSl = {id: newId, date, time: time || '', name, isArchived: false, teamId: teamId, songs: []};
     setlists.push(newSl);
     saveToStorage();
@@ -364,7 +375,16 @@ syncSetlistIfTeam(sl);
 renderSlSongs();
 });
 }
-function changeSongKeyInSetlist(songId, newKey) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === songId); if (item) { item.key = newKey; saveToStorage(); syncSetlistIfTeam(sl); } }
+function changeSongKeyInSetlist(songId, newKey) {
+const sl = setlists.find(x => x.id === currentSlId);
+const item = sl.songs.find(x => x.id === songId);
+if (!item) return;
+if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); renderSlSongs(); return; }
+item.key = newKey;
+saveToStorage();
+syncSetlistIfTeam(sl);
+if (sl.teamId) { showToast('✅ Тональность изменена для всех участников', 'success'); }
+}
 function openAddSongToSlModal() {
 const sl = setlists.find(x => x.id === currentSlId);
 if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }

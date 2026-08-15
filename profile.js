@@ -42,8 +42,17 @@ const lastnameInput = document.getElementById('profile-lastname-input');
 if (lastnameInput) lastnameInput.value = data.lastName || '';
 const genderInput = document.getElementById('profile-gender-input');
 if (genderInput) genderInput.value = data.gender || '';
-const birthdayInput = document.getElementById('profile-birthday-input');
-if (birthdayInput) birthdayInput.value = data.birthDate || '';
+const bDay = document.getElementById('profile-birthday-day');
+const bMonth = document.getElementById('profile-birthday-month');
+if (bDay && bMonth) {
+const raw = data.birthDate || '';
+const parts = raw.split('-');
+let mm = '', dd = '';
+if (parts.length === 3) { mm = parts[1]; dd = parts[2]; }
+else if (parts.length === 2) { mm = parts[0]; dd = parts[1]; }
+bDay.value = dd;
+bMonth.value = mm;
+}
 const countryInput = document.getElementById('profile-country-input');
 if (countryInput) countryInput.value = data.country || '';
 const cityInput = document.getElementById('profile-city-input');

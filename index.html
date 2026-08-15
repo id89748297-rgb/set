@@ -232,8 +232,16 @@ style="text-align: right; background: #1e1e1e; border: 1px solid #444; color: #9
 </div>
 <div class="profile-info-row">
 <span class="profile-label">День рождения 🥳:</span>
-<input type="date" id="profile-birthday-input" class="profile-edit-input"
-style="text-align: right; background: #1e1e1e; border: 1px solid #444; color: #90caf9; font-size: 14px; padding: 6px 10px; border-radius: 6px; max-width: 200px;">
+<div style="display:flex; gap:6px;">
+<select id="profile-birthday-day" class="profile-edit-input" style="background: #1e1e1e; border: 1px solid #444; color: #90caf9; font-size: 14px; padding: 6px 4px; border-radius: 6px;">
+<option value="">День</option>
+<option value="01">1</option><option value="02">2</option><option value="03">3</option><option value="04">4</option><option value="05">5</option><option value="06">6</option><option value="07">7</option><option value="08">8</option><option value="09">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option>
+</select>
+<select id="profile-birthday-month" class="profile-edit-input" style="background: #1e1e1e; border: 1px solid #444; color: #90caf9; font-size: 14px; padding: 6px 4px; border-radius: 6px;">
+<option value="">Месяц</option>
+<option value="01">Январь</option><option value="02">Февраль</option><option value="03">Март</option><option value="04">Апрель</option><option value="05">Май</option><option value="06">Июнь</option><option value="07">Июль</option><option value="08">Август</option><option value="09">Сентябрь</option><option value="10">Октябрь</option><option value="11">Ноябрь</option><option value="12">Декабрь</option>
+</select>
+</div>
 </div>
 <div class="profile-info-row">
 <span class="profile-label">Страна:</span>

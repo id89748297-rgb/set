@@ -1,3 +1,22 @@
+/* === Увеличение зоны клика для мелких иконок-кнопок (фикс промахов на ПК) === */
+.btn-icon {
+min-width: 34px;
+min-height: 34px;
+display: inline-flex;
+align-items: center;
+justify-content: center;
+padding: 4px;
+box-sizing: border-box;
+position: relative;
+z-index: 1;
+}
+.item-actions {
+gap: 6px;
+}
+.toolbar-btn-item {
+min-width: 40px;
+min-height: 40px;
+}
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { touch-action: manipulation; }
 body { font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; background: #121212; color: #eee; padding: 15px; padding-top: calc(env(safe-area-inset-top, 0px) + 15px); padding-bottom: 80px; transition: background 0.3s, color 0.3s; overflow-x: hidden; }

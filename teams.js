@@ -228,6 +228,21 @@ console.error('Не удалось передать владение:', err);
 }
 }
 }
+if (db && currentUser && team.createdBy === currentUser.uid) {
+const roles = teamRolesCache[teamId] || {};
+const others = Object.entries(roles).filter(([uid]) => uid !== currentUser.uid);
+const owners2 = others.filter(([, r]) => r.role === 'owner').sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+const admins2 = others.filter(([, r]) => r.role === 'admin').sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+const members2 = others.filter(([, r]) => r.role === 'member').sort((a, b) => a[1].joinedAt - b[1].joinedAt);
+const newFounder = owners2[0] || admins2[0] || members2[0];
+if (newFounder) {
+try {
+await db.collection('teamRegistry').doc(teamId).update({ createdBy: newFounder[0] });
+} catch (err) {
+console.error('Не удалось передать статус создателя:', err);
+}
+}
+}
 setlists = setlists.filter(sl => sl.teamId !== teamId);
 songs = songs.filter(s => s.fromTeam !== teamId);
 teams = teams.filter(t => t.id !== teamId);
@@ -541,6 +556,7 @@ roles[doc.id] = { role: doc.data().role || 'member', joinedAt: doc.data().joined
 if (doc.id === currentUser.uid) myRawRole = doc.data().role;
 });
 teamRolesCache[teamId] = roles;
+try { localStorage.setItem('clc_team_roles_cache', JSON.stringify(teamRolesCache)); } catch {}
 const team = teams.find(t => t.id === teamId);
 if (!myRawRole && team && team.createdBy === currentUser.uid) {
 db.collection('teamRegistry').doc(teamId).collection('members').doc(currentUser.uid).update({ role: 'owner' }).catch(err => console.error('role bootstrap failed:', err));
@@ -679,15 +695,19 @@ exportSetlistAsFileDirect();
 return;
 }
 const section = document.getElementById('share-to-team-section');
-if (teams.length > 0) {
+const shareableTeams = teams.filter(t => t.id !== sl.teamId);
+if (shareableTeams.length > 0) {
 section.innerHTML = `
 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
 <p style="color: #888; font-size: 13px; margin-bottom: 8px;">Отправить в команду:</p>
-${teams.map(t => `<button class="btn-pastel" style="width: 100%; margin-bottom: 6px; text-align: left;" onclick="shareSetlistToTeam(${sl.id}, '${t.id}')">🎸 ${escapeHtml(t.name)}</button>`).join('')}
+${shareableTeams.map(t => {
+const icon = t.avatar ? `<img src="${escapeHtml(t.avatar)}" style="width:20px;height:20px;border-radius:5px;object-fit:cover;vertical-align:middle;margin-right:6px;">` : '🎸 ';
+return `<button class="btn-pastel" style="width: 100%; margin-bottom: 6px; text-align: left;" onclick="shareSetlistToTeam(${sl.id}, '${t.id}')">${icon}${escapeHtml(t.name)}</button>`;
+}).join('')}
 </div>
 `;
 } else {
-section.innerHTML = `<p style="color: #888; font-size: 12px; margin-top: 10px; text-align: center;">Создайте команду, чтобы отправлять сет-листы</p>`;
+section.innerHTML = `<p style="color: #888; font-size: 12px; margin-top: 10px; text-align: center;">${teams.length === 0 ? 'Создайте команду, чтобы отправлять сет-листы' : 'Больше некуда отправить'}</p>`;
 }
 modal.classList.add('show');
 }

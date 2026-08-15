@@ -355,8 +355,39 @@ openSongView(currentSongId, currentSlId);
 const scrollPosToRestore = savedScrollPosition;
 requestAnimationFrame(() => { setTimeout(() => { window.scrollTo(0, scrollPosToRestore); }, 50); });
 }
-function uploadSongImage(input, imageKey) { const file = input.files[0]; if (!file) return; const song = songs.find(x => x.id === currentSongId); if (!song) return; compressSongImage(file, (dataUrl) => { if (!song.images) song.images = {}; const existingComment = (song.images[imageKey] && song.images[imageKey].comment) || ''; song.images[imageKey] = { data: dataUrl, comment: existingComment }; saveToStorage(); openSongView(currentSongId, currentSlId); }); }
+function uploadSongImage(input, imageKey) {
+const file = input.files[0];
+if (!file) return;
+const song = songs.find(x => x.id === currentSongId);
+if (!song) return;
+const sl = currentSlId ? setlists.find(x => x.id === currentSlId) : null;
+if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); input.value = ''; return; }
+compressSongImage(file, (dataUrl) => {
+if (!song.images) song.images = {};
+const existingComment = (song.images[imageKey] && song.images[imageKey].comment) || '';
+song.images[imageKey] = { data: dataUrl, comment: existingComment };
+saveToStorage();
+if (sl && sl.teamId) syncSetlistIfTeam(sl);
+openSongView(currentSongId, currentSlId);
+});
+}
 function saveImageComment(commentKey, value) { const imageKey = commentKey.replace(/_comment$/, ''); const song = songs.find(x => x.id === currentSongId); if (!song || !song.images || !song.images[imageKey]) return; song.images[imageKey].comment = (value.trim() === '' || value === IMAGE_COMMENT_PLACEHOLDER) ? '' : value.trim(); saveToStorage(); }
-function showImageDeleteModal(imageKey) { currentImageKey = imageKey; document.getElementById('modal-image-delete').classList.add('show'); document.getElementById('btn-confirm-delete-image').onclick = () => { if (currentImageKey) { const song = songs.find(x => x.id === currentSongId); if (song && song.images) delete song.images[currentImageKey]; saveToStorage(); openSongView(currentSongId, currentSlId); closeModal('modal-image-delete'); currentImageKey = null; } }; }
+function showImageDeleteModal(imageKey) {
+const sl = currentSlId ? setlists.find(x => x.id === currentSlId) : null;
+if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
+currentImageKey = imageKey;
+document.getElementById('modal-image-delete').classList.add('show');
+document.getElementById('btn-confirm-delete-image').onclick = () => {
+if (currentImageKey) {
+const song = songs.find(x => x.id === currentSongId);
+if (song && song.images) delete song.images[currentImageKey];
+saveToStorage();
+if (sl && sl.teamId) syncSetlistIfTeam(sl);
+openSongView(currentSongId, currentSlId);
+closeModal('modal-image-delete');
+currentImageKey = null;
+}
+};
+}
 function changeFontSize(d) { fontSize = Math.max(8, Math.min(32, fontSize + d)); updateSongView(); }
 function downloadPdf() { const s = songs.find(x => x.id === currentSongId); if (!s) return; let chordpro = s.chordpro, key = s.key; if (currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl?.songs.find(x => x.id === currentSongId); if (item) { if (item.chordpro) chordpro = item.chordpro; if (item.key) key = item.key; if (item.capo > 0 && key) { key = NOTES_SHARP[((NOTES_SHARP.indexOf(key) + item.capo) % 12 + 12) % 12]; chordpro = transposeChordproText(chordpro, s.key, key); } } } let bodyHtml = '<div class="pdf-body">'; chordpro.split('\n').forEach(line => { const t = line.trim(); if (t.match(SECTION_RE)) bodyHtml += `<div class="pdf-section">${t.toUpperCase()}</div>`; else if (t) { const p = parseMixedLine(t); if (p.chords && p.text) bodyHtml += `<div class="pdf-line"><b>${p.chords}</b> ${processAccentWords(p.text)}</div>`; else if (p.chords) bodyHtml += `<div class="pdf-chords">${p.chords}</div>`; else if (p.text) bodyHtml += `<div class="pdf-text">${processAccentWords(p.text)}</div>`; if (p.rightNote) bodyHtml += `<div class="pdf-note">${p.rightNote}</div>`; } }); bodyHtml += '</div>'; const pw = window.open('', '_blank'); if (!pw) { alert('Разрешите всплывающие окна'); return; } pw.document.open(); pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${s.title}</title><style>@page{size:A4 portrait;margin:10mm}*{box-sizing:border-box}html,body{margin:0;padding:0;font-family:Arial,sans-serif;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pdf-header{text-align:center;margin-bottom:8mm}.pdf-header h1{font-size:16px;margin:0 0 3px}.pdf-header .meta{font-size:11px;color:#333}.pdf-body{width:190mm;margin:0 auto;column-count:2;column-gap:8mm;column-fill:balance;font-size:11px;line-height:1.35}.pdf-section{font-size:12px;font-weight:bold;text-transform:uppercase;margin-top:3mm;margin-bottom:1mm;break-after:avoid}.pdf-line,.pdf-chords,.pdf-text{margin-bottom:1.5mm;break-inside:avoid}.pdf-note{display:inline-block;border:1px solid #000;padding:1px 5px;font-weight:bold;font-size:10px;margin-left:3mm}@media print{.pdf-body{width:190mm!important;column-count:2!important;column-fill:balance!important}}</style></head><body><div class="pdf-header"><h1>${s.title}</h1><p class="meta">${s.author ? `Автор: ${s.author}<br>` : ''}Тональность: ${key || '—'}${s.bpm ? ` · BPM: ${s.bpm}` : ''}</p></div>${bodyHtml}<script>window.addEventListener('load',function(){setTimeout(function(){window.focus();window.print()},300)})<\/script></body></html>`); pw.document.close(); }
