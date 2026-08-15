@@ -588,6 +588,14 @@ applyTeamOverlay(teamId);
 if (currentTeamDetailId === teamId) showTeamDetailView(teamId);
 if (currentHomeView === 'songs') renderSongs();
 if (currentHomeView === 'setlists') renderSetlists();
+if (document.getElementById('page-setlist-detail').classList.contains('active')) {
+const sl = setlists.find(x => x.id === currentSlId);
+if (sl && sl.teamId === teamId) renderSlSongs();
+}
+if (document.getElementById('page-song-view').classList.contains('active') && !isInlineEditing) {
+const sl = currentSlId ? setlists.find(x => x.id === currentSlId) : null;
+if (sl && sl.teamId === teamId) openSongView(currentSongId, currentSlId);
+}
 renderCarousel();
 }, err => console.error('teamData listener error:', err));
 }
