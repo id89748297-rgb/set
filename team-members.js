@@ -225,8 +225,7 @@ function renderTeamMembersList() {
 <div class="item-left">
 ${avatarHtml}
 <div style="min-width:0;flex:1;">
-<div class="item-title">${escapeHtml(r.label)}${team.createdBy && r.uid === team.createdBy ? ' ❤️' : ''}${isMe ? ' <span style="color:#4caf50;font-size:11px;">(вы)</span>' : ''}</div>
-${roleText ? `<div class="item-sub">${roleText}</div>` : ''}
+<div class="item-title">${escapeHtml(r.label)}${team.createdBy && r.uid === team.createdBy ? ' <span style="font-size:10px;vertical-align:middle;opacity:0.85;">❤️</span>' : ''}${isMe ? ' <span style="color:#4caf50;font-size:11px;">(вы)</span>' : ''}</div>
 </div>
 ${kickBtn}
 </div>

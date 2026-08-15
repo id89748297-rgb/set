@@ -1,4 +1,18 @@
  //=== ЛОГИКА СТРАНИЦЫ ПРОФИЛЬ ===
+function updateBirthdayDayOptions(preselectDay) {
+    const monthSel = document.getElementById('profile-birthday-month');
+    const daySel = document.getElementById('profile-birthday-day');
+    if (!monthSel || !daySel) return;
+    const month = monthSel.value;
+    const daysInMonth = { '01':31,'02':29,'03':31,'04':30,'05':31,'06':30,'07':31,'08':31,'09':30,'10':31,'11':30,'12':31 };
+    const max = daysInMonth[month] || 0;
+    const prevValue = preselectDay !== undefined ? preselectDay : daySel.value;
+    let opts = '<option value="">День</option>';
+    for (let d = 1; d <= max; d++) { const val = String(d).padStart(2, '0'); opts += `<option value="${val}">${d}</option>`; }
+    daySel.innerHTML = opts;
+    daySel.disabled = !month;
+    if (prevValue && parseInt(prevValue, 10) <= max) daySel.value = prevValue;
+}
 function openProfile() {
     renderProfile();
     showPage('page-profile');
@@ -50,8 +64,8 @@ const parts = raw.split('-');
 let mm = '', dd = '';
 if (parts.length === 3) { mm = parts[1]; dd = parts[2]; }
 else if (parts.length === 2) { mm = parts[0]; dd = parts[1]; }
-bDay.value = dd;
 bMonth.value = mm;
+updateBirthdayDayOptions(dd);
 }
 const countryInput = document.getElementById('profile-country-input');
 if (countryInput) countryInput.value = data.country || '';

@@ -60,7 +60,7 @@ const bMonth = document.getElementById('profile-birthday-month').value;
 const birthDate = (bDay && bMonth) ? (bMonth + '-' + bDay) : '';
 const country = document.getElementById('profile-country-input').value.trim();
 const city = document.getElementById('profile-city-input').value.trim();
-const about = document.getElementById('profile-about-input').value.trim();
+const about = document.getElementById('profile-about-input').value.trim().slice(0, 100);
 
 if (!name) {
 alert('❌ Введите хотя бы имя!');
