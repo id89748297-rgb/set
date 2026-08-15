@@ -56,6 +56,8 @@ ${leaveOrDeleteBtn}
 html += `</div>`;
 view.innerHTML = html;
 }
+function openTeamChat(teamId) {
+}
 function openTeamFromList(teamId) {
 const idx = carouselItems.findIndex(i => i.type === 'team' && i.teamId === teamId);
 if (idx !== -1) {
@@ -621,8 +623,11 @@ return dateA - dateB;
 const isLight = document.body.classList.contains('light');
 const dateColorBase = isLight ? '#7e57c2' : '#9575cd';
 let html = `<div style="padding: 10px 0;">
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:15px;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
 <button class="btn-pastel" style="margin:0;" onclick="openSetlistModalForTeam('${team.id}')">➕ Сет-лист</button>
+<button class="btn-pastel" style="margin:0;" onclick="openTeamChat('${team.id}')">💬 Чат</button>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;">
 <button class="btn-pastel" style="margin:0;" onclick="openTeamMembers('${team.id}')">👥 Участники</button>
 <button class="btn-pastel" style="margin:0;" onclick="showTeamInvite('${team.id}')">🔗 Пригласить</button>
 </div>`;
