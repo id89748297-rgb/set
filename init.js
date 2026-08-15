@@ -9,18 +9,15 @@ buildCarouselItems();
 renderCarousel();
 setupCarouselSwipe();
 const savedStateInit = JSON.parse(localStorage.getItem('clc_state') || '{}');
+const restoringDetailPage = savedStateInit.page === 'page-song-view' || savedStateInit.page === 'page-setlist-detail';
 if (savedStateInit.carouselIdx !== undefined && savedStateInit.carouselIdx < carouselItems.length) {
 carouselActiveIndex = savedStateInit.carouselIdx;
 renderCarousel();
-activateCarouselItem(carouselActiveIndex);
+if (!restoringDetailPage) activateCarouselItem(carouselActiveIndex);
 } else {
 carouselActiveIndex = 0;
 renderCarousel();
-activateCarouselItem(0);
-}
-if (savedStateInit.page === 'page-song-view' || savedStateInit.page === 'page-setlist-detail') {
-} else {
-activateCarouselItem(carouselActiveIndex);
+if (!restoringDetailPage) activateCarouselItem(0);
 }
 setupSwipe();
 setupVlButton();

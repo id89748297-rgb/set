@@ -146,26 +146,34 @@ async function kickTeamMember(uid) {
 }
  
 function closeRoleMenu() {
-    const menu = document.getElementById('role-menu-popup');
-    if (menu) menu.remove();
-    document.removeEventListener('click', closeRoleMenu);
+    const menu = document.getElementById('role-menu-popup');
+    if (menu) menu.remove();
+    const overlay = document.getElementById('role-menu-overlay');
+    if (overlay) overlay.remove();
 }
 function openRoleMenu(uid, x, y) {
-    closeRoleMenu();
-    const team = teams.find(t => t.id === currentMembersTeamId);
-    if (!team || getMyRole(team.id) !== 'owner') return;
-    if (currentUser && uid === currentUser.uid) return;
-    const menu = document.createElement('div');
-    menu.id = 'role-menu-popup';
-    menu.style.cssText = 'position:fixed;background:#2a2a2a;border-radius:10px;overflow:hidden;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.5);min-width:150px;';
-    const opts = [['owner', 'Владелец'], ['admin', 'Админ'], ['member', 'Участник']];
-    menu.innerHTML = opts.map(([val, label]) =>
-        `<div style="padding:13px 18px;color:#eee;font-size:15px;" onclick="event.stopPropagation();selectMemberRole('${uid}','${val}')">${label}</div>`
-    ).join('<div style="height:1px;background:rgba(255,255,255,0.1);"></div>');
-    document.body.appendChild(menu);
-    menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
-    menu.style.top = Math.min(y, window.innerHeight - 160) + 'px';
-    setTimeout(() => document.addEventListener('click', closeRoleMenu), 0);
+    closeRoleMenu();
+    const team = teams.find(t => t.id === currentMembersTeamId);
+    if (!team || getMyRole(team.id) !== 'owner') return;
+    if (currentUser && uid === currentUser.uid) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'role-menu-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;';
+    overlay.onclick = closeRoleMenu;
+    document.body.appendChild(overlay);
+    const menu = document.createElement('div');
+    menu.id = 'role-menu-popup';
+    menu.style.cssText = 'position:fixed;background:#2a2a2a;border-radius:10px;overflow:hidden;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.5);min-width:150px;';
+    const opts = [['owner', 'Владелец'], ['admin', 'Админ'], ['member', 'Участник']];
+    menu.innerHTML = opts.map(([val, label]) =>
+        `<div class="role-menu-option" data-role="${val}" style="padding:13px 18px;color:#eee;font-size:15px;">${label}</div>`
+    ).join('<div style="height:1px;background:rgba(255,255,255,0.1);"></div>');
+    document.body.appendChild(menu);
+    menu.querySelectorAll('.role-menu-option').forEach(el => {
+        el.addEventListener('click', (e) => { e.stopPropagation(); selectMemberRole(uid, el.dataset.role); });
+    });
+    menu.style.left = Math.min(x, window.innerWidth - 160) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - 160) + 'px';
 }
 function selectMemberRole(uid, role) {
     closeRoleMenu();

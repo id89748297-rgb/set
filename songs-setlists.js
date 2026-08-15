@@ -28,8 +28,8 @@ if (savedColor === 'violet') document.body.classList.add('violet'); else documen
 currentHideArrows = localStorage.getItem('clc_hide_arrows') === 'true';
 currentHideComments = localStorage.getItem('clc_hide_comments') === 'true';
 const savedState = JSON.parse(localStorage.getItem('clc_state') || '{}');
-if (savedState.page === 'page-song-view' && savedState.songId) { currentSongId = savedState.songId; currentSlId = savedState.slId || null; showPage('page-song-view'); setTimeout(() => openSongView(savedState.songId, savedState.slId), 100); }
-else if (savedState.page === 'page-setlist-detail' && savedState.slId) { currentSlId = savedState.slId; showPage('page-setlist-detail'); setTimeout(() => openSetlistDetail(savedState.slId), 100); }
+if (savedState.page === 'page-song-view' && savedState.songId) { currentSongId = savedState.songId; currentSlId = savedState.slId || null; showPage('page-song-view'); openSongView(savedState.songId, savedState.slId); }
+else if (savedState.page === 'page-setlist-detail' && savedState.slId) { currentSlId = savedState.slId; showPage('page-setlist-detail'); openSetlistDetail(savedState.slId); }
 const savedDefaults = JSON.parse(localStorage.getItem('clc_defaults') || '{}');
 if (savedDefaults.fontSize) fontSize = savedDefaults.fontSize;
 if (savedDefaults.columns) currentColumns = savedDefaults.columns;
@@ -199,16 +199,42 @@ async function saveSetlist() {
     saveToStorage();
     closeModal('modal-setlist');
     delete document.getElementById('modal-setlist').dataset.teamId;
-    if (teamId) {
-        try { await publishSetlistToTeamData(newSl, teamId); saveToStorage(); }
-        catch (err) { console.error('Не удалось опубликовать сет-лист в команде:', err); }
+   if (teamId) {
+        try {
+            await publishSetlistToTeamData(newSl, teamId);
+            saveToStorage();
+            showToast('✅ Сет-лист опубликован в команде', 'success');
+        } catch (err) {
+            console.error('Не удалось опубликовать сет-лист в команде:', err);
+            showToast('⚠️ Не удалось опубликовать сет-лист в команде: ' + err.code, 'error');
+        }
         showTeamDetailView(teamId);
     } else {
         renderSetlists();
     }
 }
 function openEditSetlistModal(id) { const sl = setlists.find(x => x.id === id); document.getElementById('edit-sl-date').value = sl.date; document.getElementById('edit-sl-time').value = sl.time || ''; document.getElementById('edit-sl-name').value = sl.name; currentSlId = id; document.getElementById('modal-edit-setlist').classList.add('show'); }
-function saveEditSetlist() { const date = document.getElementById('edit-sl-date').value; const time = document.getElementById('edit-sl-time').value; const name = document.getElementById('edit-sl-name').value; if (!name || !date) return; const sl = setlists.find(x => x.id === currentSlId); if (sl) { sl.date = date; sl.time = time || ''; sl.name = name; } saveToStorage(); closeModal('modal-edit-setlist'); renderSetlists(); if (document.getElementById('page-setlist-detail').classList.contains('active')) { document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${escapeHtml(sl.name)}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`; renderSlSongs(); } }
+function saveEditSetlist() {
+const date = document.getElementById('edit-sl-date').value;
+const time = document.getElementById('edit-sl-time').value;
+const name = document.getElementById('edit-sl-name').value;
+if (!name || !date) return;
+const sl = setlists.find(x => x.id === currentSlId);
+if (sl) {
+if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
+sl.date = date;
+sl.time = time || '';
+sl.name = name;
+saveToStorage();
+syncSetlistIfTeam(sl);
+}
+closeModal('modal-edit-setlist');
+renderSetlists();
+if (document.getElementById('page-setlist-detail').classList.contains('active')) {
+document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${escapeHtml(sl.name)}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`;
+renderSlSongs();
+}
+}
 function showSetlistDeleteChoice(id, name, isVl) {
 const sl = setlists.find(x => x.id === id);
 if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
