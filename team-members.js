@@ -236,6 +236,7 @@ ${avatarHtml}
 <div style="min-width:0;flex:1;">
 <div class="item-title">${escapeHtml(r.label)}${team.createdBy && r.uid === team.createdBy ? ' <span style="font-size:10px;vertical-align:middle;opacity:0.85;">❤️</span>' : ''}${isMe ? ' <span style="color:#4caf50;font-size:11px;">(вы)</span>' : ''}</div>
 </div>
+${roleText ? `<div style="color:#888;font-size:12px;white-space:nowrap;margin-right:4px;">${roleText}</div>` : ''}
 ${kickBtn}
 </div>
 </div>`;

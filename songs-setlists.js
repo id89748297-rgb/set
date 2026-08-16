@@ -321,7 +321,7 @@ syncSetlistIfTeam(sl);
 goBackFromSetlistDetail();
 }
 }
-function openSetlistDetail(id) { currentSlId = id; const sl = setlists.find(x => x.id === id); document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${escapeHtml(sl.name)}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`; document.getElementById('sl-subtitle').innerText = 'Сет-лист'; renderSlSongs(); showPage('page-setlist-detail'); }
+function openSetlistDetail(id) { currentSlId = id; const sl = setlists.find(x => x.id === id); document.getElementById('sl-detail-title').innerHTML = `<span style="font-size: 14px; font-weight: bold;">${escapeHtml(sl.name)}</span> <span style="font-size: 14px; color: #888; font-weight: normal; margin-left: 8px;">(${formatSetlistDate(sl.date, sl.time)})</span>`; document.getElementById('sl-subtitle').innerText = 'Сет-лист'; renderSlSongs(); showPage('page-setlist-detail'); markSetlistRead(sl); }
 function goBackFromSetlistDetail() {
 const sl = setlists.find(x => x.id === currentSlId);
 if (sl && sl.teamId) {

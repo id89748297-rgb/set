@@ -23,6 +23,32 @@ function goBackFromProfile() {
     activateCarouselItem(carouselActiveIndex);
 }
 
+function applyProfileFieldsToForm(data) {
+if (!data) return;
+const nameInput = document.getElementById('profile-name-input');
+if (nameInput) nameInput.value = data.displayName || (currentUser && currentUser.displayName) || '';
+const lastnameInput = document.getElementById('profile-lastname-input');
+if (lastnameInput) lastnameInput.value = data.lastName || '';
+const genderInput = document.getElementById('profile-gender-input');
+if (genderInput) genderInput.value = data.gender || '';
+const bDay = document.getElementById('profile-birthday-day');
+const bMonth = document.getElementById('profile-birthday-month');
+if (bDay && bMonth) {
+const raw = data.birthDate || '';
+const parts = raw.split('-');
+let mm = '', dd = '';
+if (parts.length === 3) { mm = parts[1]; dd = parts[2]; }
+else if (parts.length === 2) { mm = parts[0]; dd = parts[1]; }
+bMonth.value = mm;
+updateBirthdayDayOptions(dd);
+}
+const countryInput = document.getElementById('profile-country-input');
+if (countryInput) countryInput.value = data.country || '';
+const cityInput = document.getElementById('profile-city-input');
+if (cityInput) cityInput.value = data.city || '';
+const aboutInput = document.getElementById('profile-about-input');
+if (aboutInput) aboutInput.value = data.aboutMe || '';
+}
 async function renderProfile() {
 if (!currentUser) return;
 const avatarEl = document.getElementById('profile-avatar');
@@ -45,34 +71,18 @@ else btnChangePass.style.display = 'none';
 if (!currentUser.emailVerified) btnVerify.style.display = 'block';
 else btnVerify.style.display = 'none';
 
+// ✅ СНАЧАЛА ПОКАЗЫВАЕМ ТО, ЧТО ЕСТЬ В КЭШЕ — МГНОВЕННО
+let profileCache = {};
+try { profileCache = JSON.parse(localStorage.getItem('clc_profile_cache_' + currentUser.uid) || '{}'); } catch {}
+if (Object.keys(profileCache).length) applyProfileFieldsToForm(profileCache);
+ 
 // ✅ ЗАГРУЖАЕМ ДАННЫЕ ПРОФИЛЯ ИЗ FIRESTORE
 try {
 const userDoc = await db.collection('users').doc(currentUser.uid).get();
 if (userDoc.exists) {
 const data = userDoc.data();
-const nameInput = document.getElementById('profile-name-input');
-if (nameInput) nameInput.value = data.displayName || currentUser.displayName || '';
-const lastnameInput = document.getElementById('profile-lastname-input');
-if (lastnameInput) lastnameInput.value = data.lastName || '';
-const genderInput = document.getElementById('profile-gender-input');
-if (genderInput) genderInput.value = data.gender || '';
-const bDay = document.getElementById('profile-birthday-day');
-const bMonth = document.getElementById('profile-birthday-month');
-if (bDay && bMonth) {
-const raw = data.birthDate || '';
-const parts = raw.split('-');
-let mm = '', dd = '';
-if (parts.length === 3) { mm = parts[1]; dd = parts[2]; }
-else if (parts.length === 2) { mm = parts[0]; dd = parts[1]; }
-bMonth.value = mm;
-updateBirthdayDayOptions(dd);
-}
-const countryInput = document.getElementById('profile-country-input');
-if (countryInput) countryInput.value = data.country || '';
-const cityInput = document.getElementById('profile-city-input');
-if (cityInput) cityInput.value = data.city || '';
-const aboutInput = document.getElementById('profile-about-input');
-if (aboutInput) aboutInput.value = data.aboutMe || '';
+applyProfileFieldsToForm(data);
+try { localStorage.setItem('clc_profile_cache_' + currentUser.uid, JSON.stringify(data)); } catch {}
 }
 } catch (err) {
 console.error('Ошибка загрузки профиля:', err);

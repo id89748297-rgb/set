@@ -547,6 +547,16 @@ showTeamsView();
 }
 alert(`⚠️ Вас удалили из команды «${teamName}»`);
 }
+function startSetlistStatusListener(teamId) {
+if (setlistStatusListenerUnsubs[teamId] || !db || !currentUser) return;
+setlistStatusListenerUnsubs[teamId] = db.collection('teamData').doc(teamId).collection('setlistStatus')
+.onSnapshot(snap => {
+const statuses = {};
+snap.forEach(doc => { statuses[doc.id] = doc.data(); });
+setlistStatusCache[teamId] = statuses;
+if (currentTeamDetailId === teamId) showTeamDetailView(teamId);
+}, err => console.error('setlist status listener error:', err));
+}
 function startTeamRolesListener(teamId) {
 if (teamRolesListenerUnsubs[teamId] || !db || !currentUser) return;
 teamRolesListenerUnsubs[teamId] = db.collection('teamRegistry').doc(teamId).collection('members')
@@ -581,6 +591,7 @@ function startTeamDataListener(teamId) {
 startTeamRegistryListener(teamId);
 startMembershipWatch(teamId);
 startTeamRolesListener(teamId);
+startSetlistStatusListener(teamId);
 if (teamListenerUnsubs[teamId] || !db || !currentUser) return;
 teamListenerUnsubs[teamId] = db.collection('teamData').doc(teamId).onSnapshot(doc => {
 teamDataCache[teamId] = doc.exists ? doc.data() : { songs: [], setlists: [] };
@@ -656,9 +667,18 @@ const dateColor = isExpired ? '#ef5350' : dateColorBase;
 const expiredClass = isExpired ? 'setlist-expired' : '';
 const changesBadge = sl.hasChanges ? ' <span style="background: #ef5350; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">ИЗМЕНЕНО</span>' : '';
 const copyBtn = `<button class="btn-icon" onclick="event.stopPropagation(); copySetlistToPersonal(${sl.id})" title="Добавить к себе в сет-листы" style="color: #4caf50;">📥</button>`;
-let actions = '';
+const slStatus = (setlistStatusCache[teamId] && setlistStatusCache[teamId][sl.id]) || null;
+let statusSlot = '';
+if (failedSyncSetlists[sl.id]) {
+statusSlot = `<button class="btn-icon" onclick="event.stopPropagation(); syncSetlistIfTeam(setlists.find(x=>x.id===${sl.id}))" title="Не удалось отправить — нажмите, чтобы повторить" style="color:#ef5350;">🔄</button>`;
+} else if (slStatus && currentUser && slStatus.updatedBy === currentUser.uid) {
+const allRead = (slStatus.requiredReaders || []).every(uid => (slStatus.readBy || []).includes(uid));
+statusSlot = allRead
+? `<span title="Прочитано всеми участниками" style="color:#42a5f5;font-size:16px;">✔✔</span>`
+: `<span title="Ожидает прочтения" style="color:#888;font-size:16px;">✔</span>`;
+}
+let actions = statusSlot;
 if (sl.isArchived) {
-actions = `${copyBtn}`;
 actions += `<button class="btn-icon" onclick="event.stopPropagation(); restoreSetlist(${sl.id})">↻</button>`;
 actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '${sl.name.replace(/'/g, "\\'")}', false)">🗑️</button>`;
 } else {
@@ -788,9 +808,19 @@ async function publishSetlistToTeamData(sl, teamId) {
         assignedId = sharedSetlist.id;
         tx.set(docRef, { songs: teamSongs, setlists: teamSetlists, sectionNotes: teamSectionNotes, inlineComments: teamInlineComments, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
     });
-    if (assignedId !== null && assignedId !== sl.id) sl.id = assignedId;
+   if (assignedId !== null && assignedId !== sl.id) sl.id = assignedId;
     sl.sharedToTeams = sl.sharedToTeams || [];
     if (!sl.sharedToTeams.includes(teamId)) sl.sharedToTeams.push(teamId);
+    try {
+        const myTeamRoles = teamRolesCache[teamId] || {};
+        const requiredReaders = Object.keys(myTeamRoles).filter(uid => uid !== currentUser.uid);
+        await db.collection('teamData').doc(teamId).collection('setlistStatus').doc(String(sl.id)).set({
+            updatedBy: currentUser.uid,
+            updatedAt: Date.now(),
+            requiredReaders,
+            readBy: [currentUser.uid]
+        });
+    } catch (err) { console.error('Не удалось обновить статус прочтения:', err); }
     return true;
 }
 async function removeSetlistFromTeamData(setlistId, teamId) {
@@ -806,9 +836,22 @@ async function removeSetlistFromTeamData(setlistId, teamId) {
         });
     } catch (err) { console.error('Team delete sync error:', err); }
 }
+function markSetlistRead(sl) {
+if (!sl || !sl.teamId || !db || !currentUser) return;
+db.collection('teamData').doc(sl.teamId).collection('setlistStatus').doc(String(sl.id)).set({
+readBy: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
+}, { merge: true }).catch(err => console.error('Не удалось отметить прочтение:', err));
+}
 function syncSetlistIfTeam(sl) {
     if (sl && sl.teamId) {
-        publishSetlistToTeamData(sl, sl.teamId).catch(err => console.error('Team sync error:', err));
+        publishSetlistToTeamData(sl, sl.teamId).then(() => {
+            delete failedSyncSetlists[sl.id];
+            if (currentTeamDetailId === sl.teamId) showTeamDetailView(sl.teamId);
+        }).catch(err => {
+            console.error('Team sync error:', err);
+            failedSyncSetlists[sl.id] = true;
+            if (currentTeamDetailId === sl.teamId) showTeamDetailView(sl.teamId);
+        });
     }
 }
 async function shareSetlistToTeam(setlistId, teamId) {
