@@ -799,17 +799,13 @@ async function publishSetlistToTeamData(sl, teamId) {
             if (sectionNotes[s.id] && Object.keys(sectionNotes[s.id]).length) teamSectionNotes[s.id] = sectionNotes[s.id];
             if (inlineComments[s.id] && Object.keys(inlineComments[s.id]).length) teamInlineComments[s.id] = inlineComments[s.id];
         });
-        let existingIdx = teamSetlists.findIndex(ts => ts.id === sl.id);
-        if (existingIdx === -1) {
-            existingIdx = teamSetlists.findIndex(ts => ts.name.toLowerCase() === sl.name.toLowerCase() && ts.date === sl.date);
-        }
-        const sharedSetlist = { id: existingIdx !== -1 ? teamSetlists[existingIdx].id : sl.id, date: sl.date, time: sl.time || '', name: sl.name, isArchived: !!sl.isArchived, sharedBy: currentUser.uid, sharedAt: Date.now(), songs: sl.songs.map(item => stripPersonalSettingsForTeam(item)) };
+        const existingIdx = teamSetlists.findIndex(ts => ts.id === sl.id);
+        const sharedSetlist = { id: sl.id, date: sl.date, time: sl.time || '', name: sl.name, isArchived: !!sl.isArchived, sharedBy: currentUser.uid, sharedAt: Date.now(), songs: sl.songs.map(item => stripPersonalSettingsForTeam(item)) };
         if (existingIdx !== -1) teamSetlists[existingIdx] = sharedSetlist; else teamSetlists.push(sharedSetlist);
         assignedId = sharedSetlist.id;
         tx.set(docRef, { songs: teamSongs, setlists: teamSetlists, sectionNotes: teamSectionNotes, inlineComments: teamInlineComments, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
     });
-   if (assignedId !== null && assignedId !== sl.id) sl.id = assignedId;
-    sl.sharedToTeams = sl.sharedToTeams || [];
+   sl.sharedToTeams = sl.sharedToTeams || [];
     if (!sl.sharedToTeams.includes(teamId)) sl.sharedToTeams.push(teamId);
     try {
         const myTeamRoles = teamRolesCache[teamId] || {};
