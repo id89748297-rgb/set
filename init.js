@@ -19,6 +19,9 @@ carouselActiveIndex = 0;
 renderCarousel();
 if (!restoringDetailPage) activateCarouselItem(0);
 }
+if (savedStateInit.membersModalTeamId && typeof openTeamMembers === 'function') {
+openTeamMembers(savedStateInit.membersModalTeamId);
+}
 setupSwipe();
 setupVlButton();
 applyBodyClasses();

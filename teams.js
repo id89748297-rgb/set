@@ -666,7 +666,6 @@ const isExpired = !sl.isArchived && isSetlistExpired(sl);
 const dateColor = isExpired ? '#ef5350' : dateColorBase;
 const expiredClass = isExpired ? 'setlist-expired' : '';
 const changesBadge = sl.hasChanges ? ' <span style="background: #ef5350; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 6px;">ИЗМЕНЕНО</span>' : '';
-const copyBtn = `<button class="btn-icon" onclick="event.stopPropagation(); copySetlistToPersonal(${sl.id})" title="Добавить к себе в сет-листы" style="color: #4caf50;">📥</button>`;
 const slStatus = (setlistStatusCache[teamId] && setlistStatusCache[teamId][sl.id]) || null;
 let statusSlot = '';
 if (failedSyncSetlists[sl.id]) {
@@ -682,7 +681,6 @@ if (sl.isArchived) {
 actions += `<button class="btn-icon" onclick="event.stopPropagation(); restoreSetlist(${sl.id})">↻</button>`;
 actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '${sl.name.replace(/'/g, "\\'")}', false)">🗑️</button>`;
 } else {
-actions = `${copyBtn}`;
 actions += `<button class="btn-icon" onclick="event.stopPropagation(); openEditSetlistModal(${sl.id})">✏️</button>`;
 actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '${sl.name.replace(/'/g, "\\'")}', false)">🗑️</button>`;
 }

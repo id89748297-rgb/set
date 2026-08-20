@@ -42,7 +42,12 @@ function saveToStorage() { localStorage.setItem('clc_songs', JSON.stringify(song
 function updateThemeButtons(icon) {
 document.querySelectorAll('.theme-toggle').forEach(b => b.innerText = icon);
 }
-function saveAppState() { const activePage = document.querySelector('.page.active'); localStorage.setItem('clc_state', JSON.stringify({ page: activePage ? activePage.id : 'page-home', songId: currentSongId, slId: currentSlId, homeView: currentHomeView, tab: currentTab, carouselIdx: carouselActiveIndex })); }
+function saveAppState() {
+const activePage = document.querySelector('.page.active');
+const membersModal = document.getElementById('modal-team-members');
+const membersModalTeamId = (membersModal && membersModal.classList.contains('show')) ? currentMembersTeamId : null;
+localStorage.setItem('clc_state', JSON.stringify({ page: activePage ? activePage.id : 'page-home', songId: currentSongId, slId: currentSlId, homeView: currentHomeView, tab: currentTab, carouselIdx: carouselActiveIndex, membersModalTeamId }));
+}
 function saveDefaultSettings() { localStorage.setItem('clc_defaults', JSON.stringify({ fontSize, columns: currentColumns })); }
 function toggleColorTheme() { if (document.body.classList.contains('violet')) { document.body.classList.remove('violet'); localStorage.setItem('clc_color', 'blue'); } else { document.body.classList.add('violet'); localStorage.setItem('clc_color', 'violet'); } }
 function showPage(id) {

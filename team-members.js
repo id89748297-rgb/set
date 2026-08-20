@@ -74,7 +74,8 @@ function openTeamMembers(teamId) {
     searchInput.value = '';
     if (cached) { renderTeamMembersList(); } else { document.getElementById('team-members-list').innerHTML = '<div style="text-align:center;color:#888;padding:30px;">Загрузка...</div>'; }
     document.getElementById('modal-team-members').classList.add('show');
-   if (!db || !currentUser) { renderTeamMembersList(); return; }
+saveAppState();
+   if (!db || !currentUser) { renderTeamMembersList(); return; }
     db.collection('teamRegistry').doc(teamId).get()
         .then(regDoc => {
             if (regDoc.exists) {
@@ -107,6 +108,7 @@ function closeTeamMembers() {
     closeModal('modal-team-members');
     currentMembersTeamId = null;
     currentMembersProfiles = {};
+    saveAppState();
 }
 async function changeTeamMemberRole(uid, newRole) {
     const team = teams.find(t => t.id === currentMembersTeamId);
