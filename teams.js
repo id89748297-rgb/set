@@ -57,6 +57,238 @@ html += `</div>`;
 view.innerHTML = html;
 }
 function openTeamChat(teamId) {
+const team = teams.find(t => t.id === teamId);
+if (!team) return;
+currentChatTeamId = teamId;
+chatEditingMessageId = null;
+document.getElementById('chat-team-name').innerText = team.name;
+document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src="${team.avatar}" alt="">` : '🎸';
+document.getElementById('chat-input').value = '';
+document.getElementById('modal-team-chat').classList.add('show');
+if (!chatMessagesCache[teamId]) chatMessagesCache[teamId] = [];
+renderChatMessages(teamId);
+startChatListener(teamId);
+startChatReadsListener(teamId);
+setTimeout(() => scrollChatToBottom(), 50);
+}
+function closeTeamChat() {
+document.getElementById('modal-team-chat').classList.remove('show');
+currentChatTeamId = null;
+chatEditingMessageId = null;
+}
+function scrollChatToBottom() {
+const list = document.getElementById('chat-messages-list');
+if (list) list.scrollTop = list.scrollHeight;
+}
+function startChatListener(teamId) {
+if (chatListenerUnsubs[teamId] || !db || !currentUser) return;
+chatListenerUnsubs[teamId] = db.collection('teamRegistry').doc(teamId).collection('chat')
+.orderBy('createdAt', 'desc').limit(50)
+.onSnapshot(snap => {
+const msgs = [];
+snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
+msgs.reverse();
+chatMessagesCache[teamId] = msgs;
+if (currentChatTeamId === teamId) {
+const list = document.getElementById('chat-messages-list');
+const wasAtBottom = list ? (list.scrollHeight - list.scrollTop - list.clientHeight < 60) : true;
+renderChatMessages(teamId);
+if (wasAtBottom) scrollChatToBottom();
+markChatRead(teamId);
+}
+}, err => console.error('chat listener error:', err));
+}
+function startChatReadsListener(teamId) {
+if (chatReadsListenerUnsubs[teamId] || !db || !currentUser) return;
+chatReadsListenerUnsubs[teamId] = db.collection('teamRegistry').doc(teamId).collection('chatReads')
+.onSnapshot(snap => {
+const reads = {};
+snap.forEach(doc => { reads[doc.id] = doc.data().lastReadAt || 0; });
+chatReadsCache[teamId] = reads;
+if (currentChatTeamId === teamId) renderChatMessages(teamId);
+}, err => console.error('chat reads listener error:', err));
+}
+function markChatRead(teamId) {
+if (!db || !currentUser) return;
+db.collection('teamRegistry').doc(teamId).collection('chatReads').doc(currentUser.uid)
+.set({ lastReadAt: Date.now() }, { merge: true }).catch(err => console.error('mark chat read failed:', err));
+}
+function renderChatMessages(teamId) {
+const list = document.getElementById('chat-messages-list');
+if (!list) return;
+const msgs = chatMessagesCache[teamId] || [];
+const roles = teamRolesCache[teamId] || {};
+const reads = chatReadsCache[teamId] || {};
+list.innerHTML = msgs.map(m => {
+const isMe = m.senderId === currentUser.uid;
+const p = currentMembersProfiles[m.senderId] || {};
+const name = [p.displayName, p.lastName].filter(Boolean).join(' ').trim() || 'Без имени';
+const roleObj = roles[m.senderId];
+const roleLabel = roleObj && roleObj.role === 'owner' ? 'Владелец' : (roleObj && roleObj.role === 'admin' ? 'Админ' : '');
+const avatarHtml = p.avatar ? `<img src="${escapeHtml(p.avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : `<div style="width:32px;height:32px;border-radius:50%;background:#444;display:flex;align-items:center;justify-content:center;">👤</div>`;
+const time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+const bodyText = m.deleted ? '<i style="opacity:0.6;">Сообщение удалено</i>' : escapeHtml(m.text || '');
+const editedTag = (!m.deleted && m.editedAt) ? ' <span style="opacity:0.6;font-size:11px;">(изменено)</span>' : '';
+const otherUids = Object.keys(roles).filter(uid => uid !== m.senderId);
+let statusHtml = '';
+if (isMe && !m.deleted) {
+const allRead = otherUids.every(uid => (reads[uid] || 0) >= m.createdAt);
+statusHtml = allRead ? `<span style="color:#42a5f5;font-size:12px;">✔✔</span>` : `<span style="color:#888;font-size:12px;">✔</span>`;
+}
+const pressAttrs = !m.deleted ? `ontouchstart="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" ontouchend="cancelChatMsgPress()" ontouchcancel="cancelChatMsgPress()" onmousedown="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" onmouseup="cancelChatMsgPress()" onmouseleave="cancelChatMsgPress()"` : '';
+if (isMe) {
+return `<div style="display:flex;justify-content:flex-end;">
+<div ${pressAttrs} style="max-width:75%;background:rgba(144,202,249,0.18);border-radius:14px 14px 4px 14px;padding:8px 12px;">
+<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;">${bodyText}${editedTag}</div>
+<div style="display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;"><span style="font-size:11px;color:#888;">${time}</span>${statusHtml}</div>
+</div>
+</div>`;
+} else {
+return `<div style="display:flex;gap:8px;align-items:flex-end;">
+${avatarHtml}
+<div ${pressAttrs} style="max-width:75%;background:#2a2a2a;border-radius:14px 14px 14px 4px;padding:8px 12px;">
+<div style="font-size:12px;color:#90caf9;font-weight:bold;">${escapeHtml(name)}${roleLabel ? ` <span style="color:#888;font-weight:normal;">· ${roleLabel}</span>` : ''}</div>
+<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;margin-top:2px;">${bodyText}${editedTag}</div>
+<div style="font-size:11px;color:#888;margin-top:2px;">${time}</div>
+</div>
+</div>`;
+}
+}).join('');
+}
+function handleChatInputKeydown(e) {
+if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendOrEditChatMessage(); }
+}
+async function sendOrEditChatMessage() {
+const teamId = currentChatTeamId;
+if (!teamId || !db || !currentUser) return;
+const input = document.getElementById('chat-input');
+const text = input.value.trim();
+if (!text) return;
+input.value = '';
+try {
+if (chatEditingMessageId) {
+await db.collection('teamRegistry').doc(teamId).collection('chat').doc(chatEditingMessageId).update({ text, editedAt: Date.now() });
+chatEditingMessageId = null;
+} else {
+await db.collection('teamRegistry').doc(teamId).collection('chat').add({ text, senderId: currentUser.uid, createdAt: Date.now() });
+}
+} catch (err) {
+console.error('Не удалось отправить сообщение:', err);
+alert('❌ Не удалось отправить сообщение: ' + err.code);
+input.value = text;
+}
+}
+function startChatMsgPress(e, teamId, msgId, senderId) {
+const x = e.touches ? e.touches[0].clientX : e.clientX;
+const y = e.touches ? e.touches[0].clientY : e.clientY;
+window.__chatPressFired = false;
+window.__chatPressTimer = setTimeout(() => {
+window.__chatPressFired = true;
+if (navigator.vibrate) navigator.vibrate(30);
+openChatMsgMenu(teamId, msgId, senderId, x, y);
+}, 500);
+}
+function cancelChatMsgPress() { clearTimeout(window.__chatPressTimer); }
+function closeChatMsgMenuPopup() {
+const menu = document.getElementById('chat-msg-menu-popup');
+if (menu) menu.remove();
+const overlay = document.getElementById('chat-msg-menu-overlay');
+if (overlay) overlay.remove();
+}
+function openChatMsgMenu(teamId, msgId, senderId, x, y) {
+closeChatMsgMenuPopup();
+const myRole = getMyRole(teamId);
+const isMine = currentUser && senderId === currentUser.uid;
+const isOwnerOrAdmin = myRole === 'owner' || myRole === 'admin';
+if (!isMine && !isOwnerOrAdmin) return;
+const msg = (chatMessagesCache[teamId] || []).find(m => m.id === msgId);
+const reads = chatReadsCache[teamId] || {};
+const roles = teamRolesCache[teamId] || {};
+const otherUids = Object.keys(roles).filter(uid => uid !== senderId);
+const allRead = msg ? otherUids.every(uid => (reads[uid] || 0) >= msg.createdAt) : true;
+const options = [];
+if (isMine && !allRead) options.push(['edit', '✏️ Изменить']);
+if (isMine || isOwnerOrAdmin) options.push(['delete', '🗑️ Удалить сообщение']);
+if (!isMine && isOwnerOrAdmin) options.push(['deleteAllKick', '⛔ Удалить все сообщения и исключить']);
+if (options.length === 0) return;
+const overlay = document.createElement('div');
+overlay.id = 'chat-msg-menu-overlay';
+overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;';
+overlay.onclick = closeChatMsgMenuPopup;
+document.body.appendChild(overlay);
+const menu = document.createElement('div');
+menu.id = 'chat-msg-menu-popup';
+menu.style.cssText = 'position:fixed;background:#2a2a2a;border-radius:10px;overflow:hidden;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.5);min-width:220px;';
+menu.innerHTML = options.map(([val, label]) =>
+`<div class="chat-menu-option" data-action="${val}" style="padding:13px 18px;color:${val==='deleteAllKick'?'#ef5350':'#eee'};font-size:15px;">${label}</div>`
+).join('<div style="height:1px;background:rgba(255,255,255,0.1);"></div>');
+document.body.appendChild(menu);
+menu.querySelectorAll('.chat-menu-option').forEach(el => {
+el.addEventListener('click', (e) => {
+e.stopPropagation();
+const action = el.dataset.action;
+closeChatMsgMenuPopup();
+if (action === 'edit') startEditChatMessage(msgId);
+else if (action === 'delete') deleteChatMessage(teamId, msgId);
+else if (action === 'deleteAllKick') deleteAllMessagesFromUserAndKick(teamId, senderId);
+});
+});
+const menuHeight = options.length * 45;
+menu.style.left = Math.min(x, window.innerWidth - 230) + 'px';
+menu.style.top = Math.min(y, window.innerHeight - menuHeight - 10) + 'px';
+}
+function startEditChatMessage(msgId) {
+const teamId = currentChatTeamId;
+const msg = (chatMessagesCache[teamId] || []).find(m => m.id === msgId);
+if (!msg) return;
+chatEditingMessageId = msgId;
+const input = document.getElementById('chat-input');
+input.value = msg.text || '';
+input.focus();
+}
+async function deleteChatMessage(teamId, msgId) {
+if (!confirm('Удалить это сообщение?')) return;
+try {
+await db.collection('teamRegistry').doc(teamId).collection('chat').doc(msgId).update({ text: null, deleted: true, editedAt: null });
+} catch (err) {
+console.error('Не удалось удалить сообщение:', err);
+alert('❌ Не удалось удалить сообщение: ' + err.code);
+}
+}
+async function deleteAllMessagesFromUserAndKick(teamId, senderId) {
+if (!confirm('Удалить все сообщения этого участника и исключить его из команды?')) return;
+try {
+const snap = await db.collection('teamRegistry').doc(teamId).collection('chat').where('senderId', '==', senderId).get();
+const batch = db.batch();
+snap.forEach(doc => batch.update(doc.ref, { text: null, deleted: true, editedAt: null }));
+await batch.commit();
+} catch (err) {
+console.error('Не удалось удалить сообщения участника:', err);
+}
+currentMembersTeamId = teamId;
+await kickTeamMember(senderId);
+}
+function handleChatScroll(el) {
+if (el.scrollTop < 40) loadMoreChatMessages(currentChatTeamId);
+}
+async function loadMoreChatMessages(teamId) {
+if (!teamId || !db || chatOldestLoaded[teamId] === 'end') return;
+const msgs = chatMessagesCache[teamId] || [];
+if (msgs.length === 0) return;
+const oldestTs = msgs[0].createdAt;
+try {
+const snap = await db.collection('teamRegistry').doc(teamId).collection('chat')
+.orderBy('createdAt', 'desc').startAfter(oldestTs).limit(30).get();
+if (snap.empty) { chatOldestLoaded[teamId] = 'end'; return; }
+const older = [];
+snap.forEach(doc => older.push({ id: doc.id, ...doc.data() }));
+older.reverse();
+const list = document.getElementById('chat-messages-list');
+const prevHeight = list ? list.scrollHeight : 0;
+chatMessagesCache[teamId] = older.concat(chatMessagesCache[teamId] || []);
+renderChatMessages(teamId);
+if (list) list.scrollTop = list.scrollHeight - prevHeight;
+} catch (err) { console.error('Не удалось подгрузить старые сообщения:', err); }
 }
 function openTeamFromList(teamId) {
 const idx = carouselItems.findIndex(i => i.type === 'team' && i.teamId === teamId);
@@ -601,7 +833,7 @@ if (currentHomeView === 'songs') renderSongs();
 if (currentHomeView === 'setlists') renderSetlists();
 if (document.getElementById('page-setlist-detail').classList.contains('active')) {
 const sl = setlists.find(x => x.id === currentSlId);
-if (sl && sl.teamId === teamId) renderSlSongs();
+if (sl && sl.teamId === teamId) { renderSlSongs(); markSetlistRead(sl); }
 }
 if (document.getElementById('page-song-view').classList.contains('active') && !isInlineEditing) {
 const sl = currentSlId ? setlists.find(x => x.id === currentSlId) : null;
