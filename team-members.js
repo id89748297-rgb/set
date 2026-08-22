@@ -58,10 +58,12 @@ async function ensureTeamMemberships() {
 }
  
 function openTeamMembers(teamId) {
+    ensureFullscreenModalStyles();
     const team = teams.find(t => t.id === teamId);
     if (!team) return;
     currentMembersTeamId = teamId;
     startTeamRolesListener(teamId);
+    setupModalSwipeClose('modal-team-members', closeTeamMembers);
     let mCache = {};
     try { mCache = JSON.parse(localStorage.getItem('clc_team_members_cache') || '{}'); } catch {}
     const cached = mCache[teamId];

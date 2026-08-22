@@ -56,7 +56,46 @@ ${leaveOrDeleteBtn}
 html += `</div>`;
 view.innerHTML = html;
 }
+function ensureFullscreenModalStyles() {
+if (document.getElementById('fullscreen-modal-style-fix')) return;
+const style = document.createElement('style');
+style.id = 'fullscreen-modal-style-fix';
+style.textContent = `
+#modal-team-chat.show, #modal-team-members.show {
+position: fixed !important; inset: 0 !important; z-index: 2000 !important;
+display: flex !important; align-items: stretch !important; justify-content: stretch !important;
+background: #121212;
+}
+body.light #modal-team-chat.show, body.light #modal-team-members.show { background: #fff; }
+#modal-team-chat .modal-content, #modal-team-members .modal-content {
+width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important;
+border-radius: 0 !important; margin: 0 !important; display: flex !important; flex-direction: column !important;
+}
+#chat-messages-list { flex: 1; }
+`;
+document.head.appendChild(style);
+}
+function setupModalSwipeClose(modalId, closeFn) {
+const modal = document.getElementById(modalId);
+if (!modal || modal.dataset.swipeBound) return;
+modal.dataset.swipeBound = 'true';
+let startX = 0, startY = 0, tracking = false;
+modal.addEventListener('touchstart', (e) => {
+if (e.target.closest('textarea, input, button')) { tracking = false; return; }
+startX = e.touches[0].clientX;
+startY = e.touches[0].clientY;
+tracking = true;
+}, { passive: true });
+modal.addEventListener('touchend', (e) => {
+if (!tracking) return;
+tracking = false;
+const dx = e.changedTouches[0].clientX - startX;
+const dy = e.changedTouches[0].clientY - startY;
+if (dx < -60 && Math.abs(dx) > Math.abs(dy) * 1.5) closeFn();
+}, { passive: true });
+}
 function openTeamChat(teamId) {
+ensureFullscreenModalStyles();
 const team = teams.find(t => t.id === teamId);
 if (!team) return;
 currentChatTeamId = teamId;
@@ -66,9 +105,19 @@ document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src=
 document.getElementById('chat-input').value = '';
 document.getElementById('modal-team-chat').classList.add('show');
 if (!chatMessagesCache[teamId]) chatMessagesCache[teamId] = [];
+startTeamRolesListener(teamId);
+if (db && currentUser) {
+db.collection('teamRegistry').doc(teamId).collection('private').doc('profiles').get().then(doc => {
+if (doc.exists) {
+currentMembersProfiles = { ...currentMembersProfiles, ...(doc.data() || {}) };
+if (currentChatTeamId === teamId) renderChatMessages(teamId);
+}
+}).catch(err => console.error('Не удалось загрузить профили для чата:', err));
+}
 renderChatMessages(teamId);
 startChatListener(teamId);
 startChatReadsListener(teamId);
+setupModalSwipeClose('modal-team-chat', closeTeamChat);
 setTimeout(() => scrollChatToBottom(), 50);
 }
 function closeTeamChat() {
@@ -105,6 +154,7 @@ chatReadsListenerUnsubs[teamId] = db.collection('teamRegistry').doc(teamId).coll
 const reads = {};
 snap.forEach(doc => { reads[doc.id] = doc.data().lastReadAt || 0; });
 chatReadsCache[teamId] = reads;
+try { localStorage.setItem('clc_chat_reads_cache', JSON.stringify(chatReadsCache)); } catch {}
 if (currentChatTeamId === teamId) renderChatMessages(teamId);
 }, err => console.error('chat reads listener error:', err));
 }
@@ -133,7 +183,7 @@ const otherUids = Object.keys(roles).filter(uid => uid !== m.senderId);
 let statusHtml = '';
 if (isMe && !m.deleted) {
 const allRead = otherUids.every(uid => (reads[uid] || 0) >= m.createdAt);
-statusHtml = allRead ? `<span style="color:#42a5f5;font-size:12px;">✔✔</span>` : `<span style="color:#888;font-size:12px;">✔</span>`;
+statusHtml = allRead ? `<span style="color:#42a5f5;font-size:11px;">✔\uFE0E✔\uFE0E</span>` : `<span style="color:#888;font-size:11px;">✔\uFE0E</span>`;
 }
 const pressAttrs = !m.deleted ? `ontouchstart="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" ontouchend="cancelChatMsgPress()" ontouchcancel="cancelChatMsgPress()" onmousedown="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" onmouseup="cancelChatMsgPress()" onmouseleave="cancelChatMsgPress()"` : '';
 if (isMe) {
@@ -786,6 +836,7 @@ setlistStatusListenerUnsubs[teamId] = db.collection('teamData').doc(teamId).coll
 const statuses = {};
 snap.forEach(doc => { statuses[doc.id] = doc.data(); });
 setlistStatusCache[teamId] = statuses;
+try { localStorage.setItem('clc_setlist_status_cache', JSON.stringify(setlistStatusCache)); } catch {}
 if (currentTeamDetailId === teamId) showTeamDetailView(teamId);
 }, err => console.error('setlist status listener error:', err));
 }
@@ -905,8 +956,8 @@ statusSlot = `<button class="btn-icon" onclick="event.stopPropagation(); syncSet
 } else if (slStatus && currentUser && slStatus.updatedBy === currentUser.uid) {
 const allRead = (slStatus.requiredReaders || []).every(uid => (slStatus.readBy || []).includes(uid));
 statusSlot = allRead
-? `<span title="Прочитано всеми участниками" style="color:#42a5f5;font-size:16px;">✔✔</span>`
-: `<span title="Ожидает прочтения" style="color:#888;font-size:16px;">✔</span>`;
+? `<span title="Прочитано всеми участниками" style="color:#42a5f5;font-size:13px;">✔\uFE0E✔\uFE0E</span>`
+: `<span title="Ожидает прочтения" style="color:#888;font-size:13px;">✔\uFE0E</span>`;
 }
 let actions = statusSlot;
 if (sl.isArchived) {

@@ -6,6 +6,8 @@ if (teamCache.songs) songs = songs.concat(teamCache.songs);
 if (teamCache.setlists) setlists = setlists.concat(teamCache.setlists);
 } catch {}
 try { teamRolesCache = JSON.parse(localStorage.getItem('clc_team_roles_cache') || '{}'); } catch {}
+try { setlistStatusCache = JSON.parse(localStorage.getItem('clc_setlist_status_cache') || '{}'); } catch {}
+try { chatReadsCache = JSON.parse(localStorage.getItem('clc_chat_reads_cache') || '{}'); } catch {}
 const savedTheme = localStorage.getItem('clc_theme');
 if (savedTheme === 'light') {
 document.body.classList.remove('dark');
