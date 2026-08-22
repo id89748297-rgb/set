@@ -58,7 +58,7 @@ async function ensureTeamMemberships() {
 }
  
 function openTeamMembers(teamId) {
-    ensureFullscreenModalStyles();
+    applyFullscreenModalStyle('modal-team-members');
     const team = teams.find(t => t.id === teamId);
     if (!team) return;
     currentMembersTeamId = teamId;

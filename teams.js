@@ -56,24 +56,32 @@ ${leaveOrDeleteBtn}
 html += `</div>`;
 view.innerHTML = html;
 }
-function ensureFullscreenModalStyles() {
-if (document.getElementById('fullscreen-modal-style-fix')) return;
-const style = document.createElement('style');
-style.id = 'fullscreen-modal-style-fix';
-style.textContent = `
-#modal-team-chat.show, #modal-team-members.show {
-position: fixed !important; inset: 0 !important; z-index: 2000 !important;
-display: flex !important; align-items: stretch !important; justify-content: stretch !important;
-background: #121212;
+function applyFullscreenModalStyle(modalId) {
+const modal = document.getElementById(modalId);
+if (!modal) return;
+modal.style.setProperty('position', 'fixed', 'important');
+modal.style.setProperty('top', '0', 'important');
+modal.style.setProperty('left', '0', 'important');
+modal.style.setProperty('right', '0', 'important');
+modal.style.setProperty('bottom', '0', 'important');
+modal.style.setProperty('width', '100vw', 'important');
+modal.style.setProperty('height', '100vh', 'important');
+modal.style.setProperty('max-width', 'none', 'important');
+modal.style.setProperty('max-height', 'none', 'important');
+modal.style.setProperty('margin', '0', 'important');
+modal.style.setProperty('border-radius', '0', 'important');
+modal.style.setProperty('z-index', '2000', 'important');
+const content = modal.querySelector('.modal-content');
+if (content) {
+content.style.setProperty('width', '100%', 'important');
+content.style.setProperty('height', '100%', 'important');
+content.style.setProperty('max-width', 'none', 'important');
+content.style.setProperty('max-height', 'none', 'important');
+content.style.setProperty('margin', '0', 'important');
+content.style.setProperty('border-radius', '0', 'important');
+content.style.setProperty('display', 'flex', 'important');
+content.style.setProperty('flex-direction', 'column', 'important');
 }
-body.light #modal-team-chat.show, body.light #modal-team-members.show { background: #fff; }
-#modal-team-chat .modal-content, #modal-team-members .modal-content {
-width: 100% !important; height: 100% !important; max-width: none !important; max-height: none !important;
-border-radius: 0 !important; margin: 0 !important; display: flex !important; flex-direction: column !important;
-}
-#chat-messages-list { flex: 1; }
-`;
-document.head.appendChild(style);
 }
 function setupModalSwipeClose(modalId, closeFn) {
 const modal = document.getElementById(modalId);
@@ -91,11 +99,11 @@ if (!tracking) return;
 tracking = false;
 const dx = e.changedTouches[0].clientX - startX;
 const dy = e.changedTouches[0].clientY - startY;
-if (dx < -60 && Math.abs(dx) > Math.abs(dy) * 1.5) closeFn();
+if (dx > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) closeFn();
 }, { passive: true });
 }
 function openTeamChat(teamId) {
-ensureFullscreenModalStyles();
+applyFullscreenModalStyle('modal-team-chat');;
 const team = teams.find(t => t.id === teamId);
 if (!team) return;
 currentChatTeamId = teamId;
@@ -105,16 +113,26 @@ document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src=
 document.getElementById('chat-input').value = '';
 document.getElementById('modal-team-chat').classList.add('show');
 if (!chatMessagesCache[teamId]) chatMessagesCache[teamId] = [];
+let mCache = {};
+try { mCache = JSON.parse(localStorage.getItem('clc_team_members_cache') || '{}'); } catch {}
+if (mCache[teamId] && mCache[teamId].profiles) {
+currentMembersProfiles = { ...currentMembersProfiles, ...mCache[teamId].profiles };
+}
 startTeamRolesListener(teamId);
+renderChatMessages(teamId);
 if (db && currentUser) {
 db.collection('teamRegistry').doc(teamId).collection('private').doc('profiles').get().then(doc => {
 if (doc.exists) {
 currentMembersProfiles = { ...currentMembersProfiles, ...(doc.data() || {}) };
+try {
+const c = JSON.parse(localStorage.getItem('clc_team_members_cache') || '{}');
+c[teamId] = { ids: (c[teamId] && c[teamId].ids) || [], profiles: currentMembersProfiles };
+localStorage.setItem('clc_team_members_cache', JSON.stringify(c));
+} catch {}
 if (currentChatTeamId === teamId) renderChatMessages(teamId);
 }
 }).catch(err => console.error('Не удалось загрузить профили для чата:', err));
 }
-renderChatMessages(teamId);
 startChatListener(teamId);
 startChatReadsListener(teamId);
 setupModalSwipeClose('modal-team-chat', closeTeamChat);
@@ -206,7 +224,6 @@ ${avatarHtml}
 }).join('');
 }
 function handleChatInputKeydown(e) {
-if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendOrEditChatMessage(); }
 }
 async function sendOrEditChatMessage() {
 const teamId = currentChatTeamId;
