@@ -115,9 +115,7 @@ currentChatTeamId = teamId;
 chatEditingMessageId = null;
 document.getElementById('chat-team-name').innerText = team.name;
 document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src="${team.avatar}" alt="">` : '🎸';
-const chatInputEl = document.getElementById('chat-input');
-chatInputEl.value = '';
-chatInputEl.style.setProperty('height', '38px', 'important');
+document.getElementById('chat-input').value = '';
 document.getElementById('modal-team-chat').classList.add('show');
 if (!chatMessagesCache[teamId]) chatMessagesCache[teamId] = [];
 let mCache = {};
@@ -145,14 +143,6 @@ startChatReadsListener(teamId);
 setupModalSwipeClose('modal-team-chat', closeTeamChat);
 setTimeout(() => scrollChatToBottom(), 50);
 }
-function autoGrowChatInput(el) {
-el.style.setProperty('height', 'auto', 'important');
-const newHeight = Math.min(el.scrollHeight, 98);
-el.style.setProperty('height', Math.max(newHeight, 38) + 'px', 'important');
-el.style.overflowY = el.scrollHeight > 98 ? 'auto' : 'hidden';
-}
-function closeTeamChat() {
-document.getElementById('modal-team-chat').classList.remove('show');
 function closeTeamChat() {
 document.getElementById('modal-team-chat').classList.remove('show');
 currentChatTeamId = null;
@@ -247,7 +237,6 @@ const input = document.getElementById('chat-input');
 const text = input.value.trim();
 if (!text) return;
 input.value = '';
-input.style.setProperty('height', '38px', 'important');
 try {
 if (chatEditingMessageId) {
 await db.collection('teamRegistry').doc(teamId).collection('chat').doc(chatEditingMessageId).update({ text, editedAt: Date.now() });
