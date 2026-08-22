@@ -59,54 +59,33 @@ view.innerHTML = html;
 function applyFullscreenModalStyle(modalId) {
 const modal = document.getElementById(modalId);
 if (!modal) return;
-
-modal.style.cssText = `
-position: fixed !important;
-top: 0 !important;
-left: 0 !important;
-right: 0 !important;
-bottom: 0 !important;
-width: 100vw !important;
-height: 100vh !important;
-max-width: none !important;
-max-height: none !important;
-margin: 0 !important;
-padding: 0 !important;
-border-radius: 0 !important;
-z-index: 2000 !important;
-display: flex !important;
-align-items: stretch !important;
-justify-content: stretch !important;
-`;
-
+if (modal.parentElement !== document.body) document.body.appendChild(modal);
+modal.style.setProperty('position', 'fixed', 'important');
+modal.style.setProperty('top', '0', 'important');
+modal.style.setProperty('left', '0', 'important');
+modal.style.setProperty('right', '0', 'important');
+modal.style.setProperty('bottom', '0', 'important');
+modal.style.setProperty('width', '100vw', 'important');
+modal.style.setProperty('height', '100dvh', 'important');
+modal.style.setProperty('max-width', 'none', 'important');
+modal.style.setProperty('max-height', 'none', 'important');
+modal.style.setProperty('margin', '0', 'important');
+modal.style.setProperty('border-radius', '0', 'important');
+modal.style.setProperty('z-index', '2000', 'important');
+modal.style.setProperty('display', 'none', 'important');
+modal.offsetHeight;
+modal.style.removeProperty('display');
 const content = modal.querySelector('.modal-content');
 if (content) {
-content.style.cssText = `
-width: 100% !important;
-height: 100% !important;
-max-width: none !important;
-max-height: none !important;
-margin: 0 !important;
-padding: 0 !important;
-border-radius: 0 !important;
-display: flex !important;
-flex-direction: column !important;
-position: relative !important;
-overflow: hidden !important;
-`;
-}
-
-const parent = modal.parentElement;
-if (parent && parent.classList.contains('modal-overlay')) {
-parent.style.cssText = `
-position: fixed !important;
-top: 0 !important;
-left: 0 !important;
-width: 100vw !important;
-height: 100vh !important;
-z-index: 1999 !important;
-background: rgba(0,0,0,0.95) !important;
-`;
+content.style.setProperty('width', '100%', 'important');
+content.style.setProperty('height', '100%', 'important');
+content.style.setProperty('max-width', 'none', 'important');
+content.style.setProperty('max-height', 'none', 'important');
+content.style.setProperty('margin', '0', 'important');
+content.style.setProperty('border-radius', '0', 'important');
+content.style.setProperty('display', 'flex', 'important');
+content.style.setProperty('flex-direction', 'column', 'important');
+content.style.setProperty('box-sizing', 'border-box', 'important');
 }
 }
 function setupModalSwipeClose(modalId, closeFn) {
@@ -125,7 +104,7 @@ if (!tracking) return;
 tracking = false;
 const dx = e.changedTouches[0].clientX - startX;
 const dy = e.changedTouches[0].clientY - startY;
-if (dx < -60 && Math.abs(dx) > Math.abs(dy) * 1.5) closeFn();
+if (dx > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) closeFn();
 }, { passive: true });
 }
 function openTeamChat(teamId) {
@@ -165,7 +144,6 @@ setupModalSwipeClose('modal-team-chat', closeTeamChat);
 setTimeout(() => scrollChatToBottom(), 50);
 }
 function closeTeamChat() {
-document.getElementById('modal-team-chat').style.display = 'none';
 document.getElementById('modal-team-chat').classList.remove('show');
 currentChatTeamId = null;
 chatEditingMessageId = null;
