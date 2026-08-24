@@ -4,7 +4,7 @@ carouselItems = [
 { id: 'setlists', type: 'setlists', label: 'Сет-листы',  icon: '📋' },
 { id: 'teams', type: 'teams', label: 'Команды', icon: '👥' }
 ];
-teams.forEach(t => {
+getSortedTeams().forEach(t => {
 carouselItems.push({
 id: 'team_' + t.id,
 type: 'team',
@@ -37,11 +37,13 @@ const classes = ['carousel-item'];
 if (isActive) classes.push('active');
 if (isNeighbor && !isActive) classes.push('neighbor');
 const badge = getTeamBadge(item);
+const unreadCount = item.type === 'team' ? getUnreadChatCount(item.teamId) : 0;
 const iconHtml = item.type === 'team' && item.avatar
 ? `<img src="${escapeHtml(item.avatar)}" alt="">`
 : item.icon;
 return `<div class="${classes.join(' ')}" data-real-idx="${realIdx}" data-item-id="${item.id}" onclick="handleCarouselClick(${realIdx})">
-<div class="carousel-item-inner">
+<div class="carousel-item-inner" style="position:relative;">
+${unreadCount > 0 ? `<div style="position:absolute;top:-4px;left:-4px;background:#ef5350;color:#fff;font-size:10px;font-weight:bold;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;z-index:2;">${unreadCount}</div>` : ''}
 <div class="carousel-item-icon">${iconHtml}</div>
 <div class="carousel-item-label">${escapeHtml(item.label)}</div>
 ${badge ? `<div class="carousel-item-badge">${badge}</div>` : ''}

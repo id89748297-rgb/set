@@ -8,6 +8,7 @@ if (teamCache.setlists) setlists = setlists.concat(teamCache.setlists);
 try { teamRolesCache = JSON.parse(localStorage.getItem('clc_team_roles_cache') || '{}'); } catch {}
 try { setlistStatusCache = JSON.parse(localStorage.getItem('clc_setlist_status_cache') || '{}'); } catch {}
 try { chatReadsCache = JSON.parse(localStorage.getItem('clc_chat_reads_cache') || '{}'); } catch {}
+try { pinnedTeams = JSON.parse(localStorage.getItem('clc_pinned_teams') || '[]'); } catch {}
 const savedTheme = localStorage.getItem('clc_theme');
 if (savedTheme === 'light') {
 document.body.classList.remove('dark');
@@ -427,7 +428,7 @@ document.getElementById('modal-add-song').classList.add('show');
 }
 function renderAddSongList() {
 const q = document.getElementById('add-song-search').value.toLowerCase(); const sl = setlists.find(x => x.id === currentSlId); const list = document.getElementById('add-song-list'); list.innerHTML = '';
-const filtered = songs.filter(s => !sl.songs.find(x => x.id === s.id) && (s.title.toLowerCase().includes(q) || (s.chordpro && s.chordpro.toLowerCase().includes(q)) || (s.author && s.author.toLowerCase().includes(q))));
+const filtered = songs.filter(s => !s.fromTeam && !sl.songs.find(x => x.id === s.id) && (s.title.toLowerCase().includes(q) || (s.chordpro && s.chordpro.toLowerCase().includes(q)) || (s.author && s.author.toLowerCase().includes(q))));
 if (filtered.length === 0) { list.innerHTML = '<p style="color: #888; text-align: center; padding: 20px;">Нет доступных песен</p>'; return; }
 filtered.forEach(s => { const div = document.createElement('div'); div.className = 'add-song-item'; div.innerHTML = `<span>${escapeHtml(s.title)}${s.key ? ` [${s.key}]` : ''}</span><span style="color: #90caf9; font-size: 20px;">+</span>`;
 div.onclick = () => {

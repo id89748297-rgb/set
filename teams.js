@@ -26,7 +26,7 @@ html += `<div style="text-align: center; padding: 30px 20px; color: #888;">
 <p style="font-size: 13px; margin-top: 8px;">Создайте команду, чтобы делиться сет-листами</p>
 </div>`;
 } else {
-teams.forEach(t => {
+getSortedTeams().forEach(t => {
 const teamSetlists = setlists.filter(sl => sl.teamId === t.id && !sl.isArchived);
 const rolesForCount = teamRolesCache[t.id];
 const memberCount = rolesForCount ? Object.keys(rolesForCount).length : (t.members ? t.members.length : 1);
@@ -36,7 +36,7 @@ const leaveOrDeleteBtn = memberCount > 1
 const avatarHtml = t.avatar
 ? `<img src="${t.avatar}" class="team-list-avatar" alt="">`
 : `<div class="team-list-avatar-placeholder">🎸</div>`;
-html += `<div class="list-item" style="cursor: pointer;" onclick="openTeamFromList('${t.id}')">
+html += `<div class="list-item" style="cursor: pointer;" ontouchstart="startTeamPress(event,'${t.id}')" ontouchend="cancelTeamPress()" ontouchcancel="cancelTeamPress()" onmousedown="startTeamPress(event,'${t.id}')" onmouseup="cancelTeamPress()" onmouseleave="cancelTeamPress()" onclick="if(window.__teamPressFired){window.__teamPressFired=false;return;} openTeamFromList('${t.id}')">
 <div class="item-left">
 ${avatarHtml}
 <div style="min-width: 0; flex: 1;">
@@ -143,6 +143,12 @@ startChatReadsListener(teamId);
 setupModalSwipeClose('modal-team-chat', closeTeamChat);
 setTimeout(() => scrollChatToBottom(), 50);
 }
+function autoGrowChatInput(el) {
+el.style.setProperty('height', 'auto', 'important');
+const newHeight = Math.min(el.scrollHeight, 98);
+el.style.setProperty('height', Math.max(newHeight, 38) + 'px', 'important');
+el.style.overflowY = el.scrollHeight > 98 ? 'auto' : 'hidden';
+}
 function closeTeamChat() {
 document.getElementById('modal-team-chat').classList.remove('show');
 currentChatTeamId = null;
@@ -168,6 +174,8 @@ renderChatMessages(teamId);
 if (wasAtBottom) scrollChatToBottom();
 markChatRead(teamId);
 }
+renderCarousel();
+if (currentTeamDetailId === teamId) showTeamDetailView(teamId);
 }, err => console.error('chat listener error:', err));
 }
 function startChatReadsListener(teamId) {
@@ -179,7 +187,68 @@ snap.forEach(doc => { reads[doc.id] = doc.data().lastReadAt || 0; });
 chatReadsCache[teamId] = reads;
 try { localStorage.setItem('clc_chat_reads_cache', JSON.stringify(chatReadsCache)); } catch {}
 if (currentChatTeamId === teamId) renderChatMessages(teamId);
+renderCarousel();
+if (currentTeamDetailId === teamId) showTeamDetailView(teamId);
 }, err => console.error('chat reads listener error:', err));
+}
+function getSortedTeams() {
+return [...teams].sort((a, b) => {
+const ai = pinnedTeams.indexOf(a.id);
+const bi = pinnedTeams.indexOf(b.id);
+if (ai !== -1 && bi !== -1) return ai - bi;
+if (ai !== -1) return -1;
+if (bi !== -1) return 1;
+return 0;
+});
+}
+function toggleTeamPin(teamId) {
+const idx = pinnedTeams.indexOf(teamId);
+if (idx !== -1) pinnedTeams.splice(idx, 1);
+else pinnedTeams.unshift(teamId);
+try { localStorage.setItem('clc_pinned_teams', JSON.stringify(pinnedTeams)); } catch {}
+renderCarousel();
+if (currentHomeView === 'teams') showTeamsView();
+}
+function closeTeamPinMenu() {
+const menu = document.getElementById('team-pin-menu-popup');
+if (menu) menu.remove();
+const overlay = document.getElementById('team-pin-menu-overlay');
+if (overlay) overlay.remove();
+}
+function openTeamPinMenu(teamId, x, y) {
+closeTeamPinMenu();
+const isPinned = pinnedTeams.includes(teamId);
+const overlay = document.createElement('div');
+overlay.id = 'team-pin-menu-overlay';
+overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;';
+overlay.onclick = closeTeamPinMenu;
+document.body.appendChild(overlay);
+const menu = document.createElement('div');
+menu.id = 'team-pin-menu-popup';
+menu.style.cssText = 'position:fixed;background:#2a2a2a;border-radius:10px;overflow:hidden;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.5);min-width:180px;';
+menu.innerHTML = `<div class="team-pin-option" style="padding:13px 18px;color:#eee;font-size:15px;">${isPinned ? '📌 Открепить' : '📌 Закрепить вверху'}</div>`;
+document.body.appendChild(menu);
+menu.querySelector('.team-pin-option').addEventListener('click', (e) => { e.stopPropagation(); closeTeamPinMenu(); toggleTeamPin(teamId); });
+menu.style.left = Math.min(x, window.innerWidth - 190) + 'px';
+menu.style.top = Math.min(y, window.innerHeight - 60) + 'px';
+}
+function startTeamPress(e, teamId) {
+const x = e.touches ? e.touches[0].clientX : e.clientX;
+const y = e.touches ? e.touches[0].clientY : e.clientY;
+window.__teamPressFired = false;
+window.__teamPressTimer = setTimeout(() => {
+window.__teamPressFired = true;
+if (navigator.vibrate) navigator.vibrate(30);
+openTeamPinMenu(teamId, x, y);
+}, 500);
+}
+function cancelTeamPress() { clearTimeout(window.__teamPressTimer); }
+function getUnreadChatCount(teamId) {
+if (!currentUser) return 0;
+const msgs = chatMessagesCache[teamId] || [];
+const reads = chatReadsCache[teamId] || {};
+const myLastRead = reads[currentUser.uid] || 0;
+return msgs.filter(m => !m.deleted && m.senderId !== currentUser.uid && m.createdAt > myLastRead).length;
 }
 function markChatRead(teamId) {
 if (!db || !currentUser) return;
@@ -897,6 +966,8 @@ startTeamRegistryListener(teamId);
 startMembershipWatch(teamId);
 startTeamRolesListener(teamId);
 startSetlistStatusListener(teamId);
+startChatListener(teamId);
+startChatReadsListener(teamId);
 if (teamListenerUnsubs[teamId] || !db || !currentUser) return;
 teamListenerUnsubs[teamId] = db.collection('teamData').doc(teamId).onSnapshot(doc => {
 teamDataCache[teamId] = doc.exists ? doc.data() : { songs: [], setlists: [] };
@@ -949,7 +1020,7 @@ const dateColorBase = isLight ? '#7e57c2' : '#9575cd';
 let html = `<div style="padding: 10px 0;">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
 <button class="btn-pastel" style="margin:0;" onclick="openSetlistModalForTeam('${team.id}')">➕ Сет-лист</button>
-<button class="btn-pastel" style="margin:0;" onclick="openTeamChat('${team.id}')">💬 Чат</button>
+<button class="btn-pastel" style="margin:0;position:relative;" onclick="openTeamChat('${team.id}')">💬 Чат${getUnreadChatCount(team.id) > 0 ? `<span style="position:absolute;top:-6px;right:-6px;background:#ef5350;color:#fff;font-size:11px;font-weight:bold;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;">${getUnreadChatCount(team.id)}</span>` : ''}</button>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;">
 <button class="btn-pastel" style="margin:0;" onclick="openTeamMembers('${team.id}')">👥 Участники</button>
@@ -1032,8 +1103,12 @@ return;
 }
 const section = document.getElementById('share-to-team-section');
 const shareableTeams = teams.filter(t => t.id !== sl.teamId);
+let html = '';
+if (sl.teamId) {
+html += `<button class="btn-pastel" style="width: 100%; margin-bottom: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; text-align: left; color: #4caf50;" onclick="copySetlistToPersonal(${sl.id}); closeModal('modal-share-setlist');">📥 В мои сет-листы</button>`;
+}
 if (shareableTeams.length > 0) {
-section.innerHTML = `
+html += `
 <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #444;">
 <p style="color: #888; font-size: 13px; margin-bottom: 8px;">Отправить в команду:</p>
 ${shareableTeams.map(t => {
@@ -1042,9 +1117,10 @@ return `<button class="btn-pastel" style="width: 100%; margin-bottom: 6px; text-
 }).join('')}
 </div>
 `;
-} else {
-section.innerHTML = `<p style="color: #888; font-size: 12px; margin-top: 10px; text-align: center;">${teams.length === 0 ? 'Создайте команду, чтобы отправлять сет-листы' : 'Больше некуда отправить'}</p>`;
+} else if (teams.length === 0) {
+html += `<p style="color: #888; font-size: 12px; margin-top: 10px; text-align: center;">Создайте команду, чтобы отправлять сет-листы</p>`;
 }
+section.innerHTML = html;
 modal.classList.add('show');
 }
 function exportSetlistAsFile() {

@@ -32,6 +32,7 @@ let teamDataCache = {}, teamListenerUnsubs = {}, currentTeamDetailId = null;
 let teamRegistryListenerUnsubs = {};
 let membershipWatchUnsubs = {};
 let recentlyLeftTeams = {};
+let pinnedTeams = [];
 let setlistStatusCache = {};
 let failedSyncSetlists = {};
 let teamRolesCache = {};
@@ -63,7 +64,7 @@ const NOTES_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#',
 const NOTES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'H'];
 const CHORD_RE = /^[A-H][#b]?(m|M|maj|min|dim|aug|sus|add|7|9|11|13|6|2|4|5|7sus4|sus2|sus4|maj7|min7|m7b5|dim7|aug7)?[0-9b]*(?:\/[A-H][#b]?(m|M|maj|min|dim|aug|sus|add|7|9|11|13|6|2|4|5|7sus4|sus2|sus4|maj7|min7|m7b5|dim7|aug7)?[0-9b]*)?$/i;
 const REPEAT_RE = /^(x\d+|\d+[рpx])$/i;
-const SECTION_RE = /^(\d+\s+)?(КУПЛЕТ|VERSE|ПРИПЕВ|CHORUS|BRIDGE|БРИДЖ|INTRO|ИНТРО|ВСТУПЛЕНИЕ|КОДА|CODA|ФИНАЛ|OUTRO|ЗАПЕВ|ПЕРЕХОД|PRECHORUS|ПРЕДПРИПЕВ|ПРЕД-ПРИПЕВ|ПРЕД ПРИПЕВ|ПОСТ ПРИПЕВ|ПОСТ-ПРИПЕВ|ПРОИГРЫШ|ИНСТРУМЕНТАЛ|INSTRUMENTAL|INTERLUDE|SOLO|МОСТ|МОСТИК|TAG|2\s*ПРИПЕВ|ПРИПЕВ\s*2|КОНЦОВКА|КОНЕЦ|ЗАКАНЧИВАЕМ|ВСТАВКА)(\s*\d+)?:/i;
+const SECTION_RE = /^(\d+\s+)?[A-Za-zА-ЯЁа-яё][A-Za-zА-ЯЁа-яё\-]*(\s*\d+)?:/;
 const IMAGE_COMMENT_PLACEHOLDER = 'Нажмите, чтобы добавить комментарий...';
 const URL_REGEX = /https?:\/\/[^\s]+/g;
 const LINK_PREFIX_REGEX = /^(ссылка|link|url|ссылка на песню)\s*[:\-]\s*/i;

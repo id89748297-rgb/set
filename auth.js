@@ -212,9 +212,15 @@ function getAuthErrorMessage(code) {
 
 // Show register form
 function showRegisterForm() {
-  if (confirm('Создать новый аккаунт?')) {
-    registerWithEmail();
-  }
+  const nameField = document.getElementById('register-name');
+  if (nameField.style.display === 'none') {
+    nameField.style.display = 'block';
+    nameField.focus();
+    return;
+  }
+  if (confirm('Создать новый аккаунт?')) {
+    registerWithEmail();
+  }
 }
 
 // === УПРАВЛЕНИЕ СЕССИЯМИ (УСТРОЙСТВАМИ) ===
