@@ -561,3 +561,4 @@ body.light .toast { background: rgba(255, 255, 255, 0.97); color: #333; box-shad
 body.light .member-profile-row { border-bottom-color: #eee; }
 .member-profile-label { color: #888; font-size: 13px; }
 .member-profile-value { font-weight: bold; text-align: right; }
+#chat-input { min-height: 38px !important; }
