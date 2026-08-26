@@ -36,12 +36,18 @@ const leaveOrDeleteBtn = memberCount > 1
 const avatarHtml = t.avatar
 ? `<img src="${t.avatar}" class="team-list-avatar" alt="">`
 : `<div class="team-list-avatar-placeholder">🎸</div>`;
+const teamUnread = getUnreadChatCount(t.id);
+const unreadBadge = teamUnread > 0 ? `<div style="position:absolute;top:-4px;left:-4px;background:#ef5350;color:#fff;font-size:10px;font-weight:bold;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;z-index:2;">${teamUnread}</div>` : '';
 html += `<div class="list-item" style="cursor: pointer;" ontouchstart="startTeamPress(event,'${t.id}')" ontouchend="cancelTeamPress()" ontouchcancel="cancelTeamPress()" onmousedown="startTeamPress(event,'${t.id}')" onmouseup="cancelTeamPress()" onmouseleave="cancelTeamPress()" onclick="if(window.__teamPressFired){window.__teamPressFired=false;return;} openTeamFromList('${t.id}')">
 <div class="item-left">
+<div style="position:relative;">
+${unreadBadge}
 ${avatarHtml}
+</div>
 <div style="min-width: 0; flex: 1;">
 <div class="item-title">${escapeHtml(t.name)}</div>
 <div class="item-sub">Участники: ${memberCount}${t.password ? ' · 🔐' : ''}</div>
+</div>
 </div>
 </div>
 <div class="item-actions" style="display: flex; gap: 4px;">
@@ -59,33 +65,8 @@ view.innerHTML = html;
 function applyFullscreenModalStyle(modalId) {
 const modal = document.getElementById(modalId);
 if (!modal) return;
-if (modal.parentElement !== document.body) document.body.appendChild(modal);
-modal.style.setProperty('position', 'fixed', 'important');
-modal.style.setProperty('top', '0', 'important');
-modal.style.setProperty('left', '0', 'important');
-modal.style.setProperty('right', '0', 'important');
-modal.style.setProperty('bottom', '0', 'important');
-modal.style.setProperty('width', '100vw', 'important');
-modal.style.setProperty('height', '100dvh', 'important');
-modal.style.setProperty('max-width', 'none', 'important');
-modal.style.setProperty('max-height', 'none', 'important');
-modal.style.setProperty('margin', '0', 'important');
-modal.style.setProperty('border-radius', '0', 'important');
-modal.style.setProperty('z-index', '2000', 'important');
-modal.style.setProperty('display', 'none', 'important');
-modal.offsetHeight;
-modal.style.removeProperty('display');
-const content = modal.querySelector('.modal-content');
-if (content) {
-content.style.setProperty('width', '100%', 'important');
-content.style.setProperty('height', '100%', 'important');
-content.style.setProperty('max-width', 'none', 'important');
-content.style.setProperty('max-height', 'none', 'important');
-content.style.setProperty('margin', '0', 'important');
-content.style.setProperty('border-radius', '0', 'important');
-content.style.setProperty('display', 'flex', 'important');
-content.style.setProperty('flex-direction', 'column', 'important');
-content.style.setProperty('box-sizing', 'border-box', 'important');
+if (modal.parentElement !== document.body) {
+document.body.appendChild(modal);
 }
 }
 function setupModalSwipeClose(modalId, closeFn) {
@@ -140,6 +121,7 @@ if (currentChatTeamId === teamId) renderChatMessages(teamId);
 }
 startChatListener(teamId);
 startChatReadsListener(teamId);
+markChatRead(teamId);
 setupModalSwipeClose('modal-team-chat', closeTeamChat);
 setTimeout(() => scrollChatToBottom(), 50);
 }
@@ -282,7 +264,7 @@ if (isMe) {
 return `<div style="display:flex;justify-content:flex-end;">
 <div ${pressAttrs} style="max-width:75%;background:rgba(144,202,249,0.18);border-radius:14px 14px 4px 14px;padding:8px 12px;">
 <div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;">${bodyText}${editedTag}</div>
-<div style="display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;"><span style="font-size:11px;color:#888;">${time}</span>${statusHtml}</div>
+<div style="display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;">${m.starred ? '<span style="font-size:11px;">⭐</span>' : ''}<span style="font-size:11px;color:#888;">${time}</span>${statusHtml}</div>
 </div>
 </div>`;
 } else {
@@ -291,7 +273,7 @@ ${avatarHtml}
 <div ${pressAttrs} style="max-width:75%;background:#2a2a2a;border-radius:14px 14px 14px 4px;padding:8px 12px;">
 <div style="font-size:12px;color:#90caf9;font-weight:bold;">${escapeHtml(name)}${roleLabel ? ` <span style="color:#888;font-weight:normal;">· ${roleLabel}</span>` : ''}</div>
 <div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;margin-top:2px;">${bodyText}${editedTag}</div>
-<div style="font-size:11px;color:#888;margin-top:2px;">${time}</div>
+<div style="font-size:11px;color:#888;margin-top:2px;">${m.starred ? '⭐ ' : ''}${time}</div>
 </div>
 </div>`;
 }
@@ -341,13 +323,14 @@ closeChatMsgMenuPopup();
 const myRole = getMyRole(teamId);
 const isMine = currentUser && senderId === currentUser.uid;
 const isOwnerOrAdmin = myRole === 'owner' || myRole === 'admin';
-if (!isMine && !isOwnerOrAdmin) return;
 const msg = (chatMessagesCache[teamId] || []).find(m => m.id === msgId);
+if (!msg) return;
 const reads = chatReadsCache[teamId] || {};
 const roles = teamRolesCache[teamId] || {};
 const otherUids = Object.keys(roles).filter(uid => uid !== senderId);
-const allRead = msg ? otherUids.every(uid => (reads[uid] || 0) >= msg.createdAt) : true;
+const allRead = otherUids.every(uid => (reads[uid] || 0) >= msg.createdAt);
 const options = [];
+options.push(['star', msg.starred ? '⭐ Убрать из избранного' : '⭐ В избранное']);
 if (isMine && !allRead) options.push(['edit', '✏️ Изменить']);
 if (isMine || isOwnerOrAdmin) options.push(['delete', '🗑️ Удалить сообщение']);
 if (!isMine && isOwnerOrAdmin) options.push(['deleteAllKick', '⛔ Удалить все сообщения и исключить']);
@@ -369,7 +352,8 @@ el.addEventListener('click', (e) => {
 e.stopPropagation();
 const action = el.dataset.action;
 closeChatMsgMenuPopup();
-if (action === 'edit') startEditChatMessage(msgId);
+if (action === 'star') toggleStarChatMessage(teamId, msgId);
+else if (action === 'edit') startEditChatMessage(msgId);
 else if (action === 'delete') deleteChatMessage(teamId, msgId);
 else if (action === 'deleteAllKick') deleteAllMessagesFromUserAndKick(teamId, senderId);
 });
@@ -386,6 +370,78 @@ chatEditingMessageId = msgId;
 const input = document.getElementById('chat-input');
 input.value = msg.text || '';
 input.focus();
+}
+function startChatBtnPress(e, teamId) {
+const x = e.touches ? e.touches[0].clientX : e.clientX;
+const y = e.touches ? e.touches[0].clientY : e.clientY;
+window.__chatBtnPressFired = false;
+window.__chatBtnPressTimer = setTimeout(() => {
+window.__chatBtnPressFired = true;
+if (navigator.vibrate) navigator.vibrate(30);
+openClearChatMenu(teamId, x, y);
+}, 500);
+}
+function cancelChatBtnPress() { clearTimeout(window.__chatBtnPressTimer); }
+function closeClearChatMenuPopup() {
+const menu = document.getElementById('clear-chat-menu-popup');
+if (menu) menu.remove();
+const overlay = document.getElementById('clear-chat-menu-overlay');
+if (overlay) overlay.remove();
+}
+function openClearChatMenu(teamId, x, y) {
+if (getMyRole(teamId) !== 'owner') return;
+closeClearChatMenuPopup();
+const overlay = document.createElement('div');
+overlay.id = 'clear-chat-menu-overlay';
+overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;';
+overlay.onclick = closeClearChatMenuPopup;
+document.body.appendChild(overlay);
+const menu = document.createElement('div');
+menu.id = 'clear-chat-menu-popup';
+menu.style.cssText = 'position:fixed;background:#2a2a2a;border-radius:10px;overflow:hidden;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.5);min-width:240px;';
+menu.innerHTML = `<div class="clear-chat-option" data-action="keepStarred" style="padding:13px 18px;color:#eee;font-size:15px;">⭐ Очистить, оставить избранные</div><div style="height:1px;background:rgba(255,255,255,0.1);"></div><div class="clear-chat-option" data-action="clearAll" style="padding:13px 18px;color:#ef5350;font-size:15px;">🗑️ Очистить чат полностью</div>`;
+document.body.appendChild(menu);
+menu.querySelectorAll('.clear-chat-option').forEach(el => {
+el.addEventListener('click', (e) => {
+e.stopPropagation();
+const action = el.dataset.action;
+closeClearChatMenuPopup();
+if (action === 'clearAll') clearTeamChat(teamId, false);
+else if (action === 'keepStarred') clearTeamChat(teamId, true);
+});
+});
+menu.style.left = Math.min(x, window.innerWidth - 250) + 'px';
+menu.style.top = Math.min(y, window.innerHeight - 100) + 'px';
+}
+async function clearTeamChat(teamId, keepStarred) {
+if (!db || !currentUser) return;
+const confirmMsg = keepStarred ? 'Очистить чат, оставив только избранные сообщения?' : 'Очистить весь чат полностью? Это действие необратимо для всех участников.';
+if (!confirm(confirmMsg)) return;
+try {
+const snap = await db.collection('teamRegistry').doc(teamId).collection('chat').get();
+const docsToDelete = snap.docs.filter(doc => !(keepStarred && doc.data().starred));
+let batch = db.batch();
+let count = 0;
+for (const doc of docsToDelete) {
+batch.delete(doc.ref);
+count++;
+if (count === 400) { await batch.commit(); batch = db.batch(); count = 0; }
+}
+if (count > 0) await batch.commit();
+showToast('✅ Чат очищен', 'success');
+} catch (err) {
+console.error('Не удалось очистить чат:', err);
+alert('❌ Не удалось очистить чат: ' + err.code);
+}
+}
+async function toggleStarChatMessage(teamId, msgId) {
+const msg = (chatMessagesCache[teamId] || []).find(m => m.id === msgId);
+if (!msg) return;
+try {
+await db.collection('teamRegistry').doc(teamId).collection('chat').doc(msgId).update({ starred: !msg.starred });
+} catch (err) {
+console.error('Не удалось изменить избранное:', err);
+}
 }
 async function deleteChatMessage(teamId, msgId) {
 if (!confirm('Удалить это сообщение?')) return;
@@ -1020,7 +1076,7 @@ const dateColorBase = isLight ? '#7e57c2' : '#9575cd';
 let html = `<div style="padding: 10px 0;">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
 <button class="btn-pastel" style="margin:0;" onclick="openSetlistModalForTeam('${team.id}')">➕ Сет-лист</button>
-<button class="btn-pastel" style="margin:0;position:relative;" onclick="openTeamChat('${team.id}')">💬 Чат${getUnreadChatCount(team.id) > 0 ? `<span style="position:absolute;top:-6px;right:-6px;background:#ef5350;color:#fff;font-size:11px;font-weight:bold;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;">${getUnreadChatCount(team.id)}</span>` : ''}</button>
+<button class="btn-pastel" style="margin:0;position:relative;" ontouchstart="startChatBtnPress(event,'${team.id}')" ontouchend="cancelChatBtnPress()" ontouchcancel="cancelChatBtnPress()" onmousedown="startChatBtnPress(event,'${team.id}')" onmouseup="cancelChatBtnPress()" onmouseleave="cancelChatBtnPress()" onclick="if(window.__chatBtnPressFired){window.__chatBtnPressFired=false;return;} openTeamChat('${team.id}')">💬 Чат${getUnreadChatCount(team.id) > 0 ? `<span style="position:absolute;top:-6px;right:-6px;background:#ef5350;color:#fff;font-size:11px;font-weight:bold;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 4px;">${getUnreadChatCount(team.id)}</span>` : ''}</button>
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;">
 <button class="btn-pastel" style="margin:0;" onclick="openTeamMembers('${team.id}')">👥 Участники</button>

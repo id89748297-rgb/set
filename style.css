@@ -562,3 +562,18 @@ body.light .member-profile-row { border-bottom-color: #eee; }
 .member-profile-label { color: #888; font-size: 13px; }
 .member-profile-value { font-weight: bold; text-align: right; }
 #chat-input { min-height: 38px !important; }
+
+#modal-team-chat.show, #modal-team-members.show {
+position: fixed !important;
+top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+width: 100vw !important; height: 100dvh !important;
+max-width: none !important; max-height: none !important;
+margin: 0 !important; padding: 0 !important;
+padding-top: env(safe-area-inset-top) !important;
+border-radius: 0 !important; z-index: 2000 !important;
+}
+#modal-team-chat.show .modal-content, #modal-team-members.show .modal-content {
+width: 100% !important; height: 100% !important;
+max-width: none !important; max-height: none !important;
+margin: 0 !important; border-radius: 0 !important;
+}

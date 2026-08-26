@@ -76,8 +76,9 @@ function openTeamMembers(teamId) {
     searchInput.value = '';
     if (cached) { renderTeamMembersList(); } else { document.getElementById('team-members-list').innerHTML = '<div style="text-align:center;color:#888;padding:30px;">Загрузка...</div>'; }
     document.getElementById('modal-team-members').classList.add('show');
+    document.getElementById('modal-team-members').onclick = clearMembersSearchOnOutsideClick;
 saveAppState();
-   if (!db || !currentUser) { renderTeamMembersList(); return; }
+    if (!db || !currentUser) { renderTeamMembersList(); return; }
     db.collection('teamRegistry').doc(teamId).get()
         .then(regDoc => {
             if (regDoc.exists) {
@@ -198,6 +199,12 @@ function cancelRolePress() {
     clearTimeout(window.__rolePressTimer);
 }
  
+function clearMembersSearchOnOutsideClick(e) {
+    const searchInput = document.getElementById('team-members-search');
+    if (!searchInput) return;
+    if (e.target.closest('#team-members-search')) return;
+    if (searchInput.value) { searchInput.value = ''; renderTeamMembersList(); }
+}
 function renderTeamMembersList() {
     const team = teams.find(t => t.id === currentMembersTeamId);
     const list = document.getElementById('team-members-list');
