@@ -13,7 +13,7 @@ const pairs = []; const pairRegex = new RegExp(`\\b(${PAIR_RE_STR})\\b`, 'g');
 const lineWithPlaceholders = line.replace(pairRegex, (match) => { pairs.push(match); return `\x00PAIR${pairs.length - 1}\x00`; });
 const labels = []; const labelRegex = /<span class="chord-label">\([^)]+\)<\/span>/g;
 const lineWithLabels = lineWithPlaceholders.replace(labelRegex, (match) => { labels.push(match); return `\x00LABEL${labels.length - 1}\x00`; });
-const chordRegex = /\b[A-H][#b]?(?:m|M|maj|min|dim|aug|sus|add|7|9|11|13|6|2|4|5|7sus4|sus2|sus4|maj7|min7|m7b5|dim7|aug7)?[0-9b]*(?:\/[A-H][#b]?(?:m|M|maj|min|dim|aug|sus|add|7|9|11|13|6|2|4|5|7sus4|sus2|sus4|maj7|min7|m7b5|dim7|aug7)?[0-9b]*)?(?=\s|$|[^A-Ha-h#b0-9])/gi;
+const chordRegex = /\b[A-H][#b]?(m|M|maj|min|dim|aug|sus|add|7|9|11|13|6|2|4|5|7sus4|sus2|sus4|maj7|min7|m7b5|dim7|aug7)?[0-9b]*(?:\/[A-H][#b]?(m|M|maj|min|dim|aug|sus|add|7|9|11|13|6|2|4|5|7sus4|sus2|sus4|maj7|min7|m7b5|dim7|aug7)?[0-9b]*)?(?![A-Za-zА-Яа-яЁё])/gi;
 let result = lineWithLabels.replace(chordRegex, m => convertAccidentals(m, mode));
 result = result.replace(/\x00LABEL(\d+)\x00/g, (match, idx) => labels[parseInt(idx)]);
 result = result.replace(/\x00PAIR(\d+)\x00/g, (match, idx) => { const pair = pairs[parseInt(idx)]; return pair.split('-').map(p => convertAccidentals(p, mode)).join('-'); });

@@ -49,7 +49,7 @@ ${avatarHtml}
 <div class="item-sub">Участники: ${memberCount}${t.password ? ' · 🔐' : ''}</div>
 </div>
 </div>
-<div class="item-actions" style="display: flex; gap: 4px;">
+<div class="item-actions" style="display: flex; gap: 2px;">
 <button class="btn-icon" onclick="event.stopPropagation(); openTeamMembers('${t.id}')" title="Участники">👥</button>
 <button class="btn-icon" onclick="event.stopPropagation(); showTeamInvite('${t.id}')" title="Пригласить">🔗</button>
 <button class="btn-icon" onclick="event.stopPropagation(); editTeam('${t.id}')" title="Изменить">✏️</button>
