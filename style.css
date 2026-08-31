@@ -234,7 +234,7 @@ body.dark-white .inline-edit-area { background: #1e1e1e; color: #eee; border-col
 .inline-edit-actions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
 .inline-edit-actions .row { display: flex; gap: 10px; }
 .inline-edit-actions button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 15px; font-weight: bold; cursor: pointer; min-height: 48px; }
-.inline-save-btn { background: #4caf50; color: white; }
+.inline-save-btn { background: rgba(129, 212, 250, 0.5); color: #fff; border: 2px solid rgba(129, 212, 250, 0.8); }
 .inline-cancel-btn { background: #78909c; color: white; }
 body.light .inline-cancel-btn { background: #90a4ae; color: white; }
 body.dark-white .inline-cancel-btn { background: #78909c; color: white; }
@@ -577,3 +577,39 @@ width: 100% !important; height: 100% !important;
 max-width: none !important; max-height: none !important;
 margin: 0 !important; border-radius: 0 !important;
 }
+.chords-above { margin-bottom: 0.15em !important; display: block; }
+.section-block { row-gap: 0.1em !important; }
+/* Профиль: тёмная тема — весь введённый текст белый */
+.profile-edit-input { color: #fff !important; }
+ 
+/* Профиль: светлая тема — светлый фон, чёрный текст */
+body.light .profile-edit-input {
+background: #f5f5f5 !important;
+color: #000 !important;
+border: 1px solid #ccc !important;
+}
+body.light .profile-edit-input option { background: #fff; color: #000; }
+ 
+/* Кнопки профиля — фиолетовые как вкладки */
+.btn-profile-accent {
+background: #9575cd !important;
+color: #fff !important;
+}
+body.light .btn-profile-accent {
+background: #7e57c2 !important;
+color: #fff !important;
+}
+body.dark-white .btn-profile-accent {
+background: #7e57c2 !important;
+color: #fff !important;
+}
+ 
+/* Кнопка выхода — прозрачно-красная */
+.btn-logout-transparent {
+background: rgba(239, 83, 80, 0.15) !important;
+border: 1px solid rgba(239, 83, 80, 0.5) !important;
+color: #fff !important;
+}
+.btn-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: btn-spin 0.7s linear
+infinite; vertical-align: middle; }
+@keyframes btn-spin { to { transform: rotate(360deg); } }

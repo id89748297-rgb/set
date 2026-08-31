@@ -122,3 +122,15 @@ img.src = e.target.result;
 };
 reader.readAsDataURL(file);
 }
+function withButtonSpinner(btn, promiseFactory) {
+if (!btn || btn.dataset.loading === 'true') return;
+btn.dataset.loading = 'true';
+const original = btn.innerHTML;
+btn.disabled = true;
+btn.innerHTML = '<span class="btn-spinner"></span>';
+const finish = () => { btn.disabled = false; btn.innerHTML = original; delete btn.dataset.loading; };
+const result = promiseFactory();
+if (result && typeof result.then === 'function') { result.then(finish).catch(finish); }
+else { finish(); }
+return result;
+}

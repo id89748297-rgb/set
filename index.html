@@ -270,13 +270,13 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 <span class="profile-value" id="profile-provider">—</span>
 </div>
 </div>
-<button class="btn-main" onclick="saveProfileChanges()" style="margin-bottom: 15px;">
+<button class="btn-main btn-profile-accent" onclick="withButtonSpinner(this, () => saveProfileChanges())" style="margin-bottom: 15px;">
 💾 Сохранить изменения
 </button>
 <div class="profile-actions">
-            <button class="btn-main" id="btn-change-password" onclick="changePassword()" style="display: none;">🔑 Сменить пароль</button>
+            <button class="btn-main btn-profile-accent" id="btn-change-password" onclick="changePassword()" style="display: none;">🔑 Сменить пароль</button>
             <button class="btn-secondary" onclick="sendVerificationEmail()" id="btn-verify-email" style="display: none; background: #ff9800;">📧 Подтвердить Email</button>
-            <button class="btn-danger" onclick="logout()" style="width: 100%; margin-top: 10px;">🚪 Выйти из аккаунта</button>
+            <button class="btn-danger btn-logout-transparent" onclick="logout()" style="width: 100%; margin-top: 10px;">Выйти из аккаунта</button>
         </div>
     </div>
 </div>
@@ -304,7 +304,7 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 <h1 id="song-view-title" class="song-title-main">Песня</h1>
 <div id="song-view-links" class="song-view-links"></div>
 </div>
-<div class="header-right"><button class="btn-refresh-round" onclick="refreshPage(this)" title="Обновить" style="color:#90caf9;">↻</button><button class="theme-toggle" onclick="toggleTheme()"></button></div>
+<div class="header-right"><button class="btn-refresh-round" onclick="refreshPage(this)" title="Обновить" style="background:###448aff;color:#fff;">↻</button><button class="theme-toggle" onclick="toggleTheme()"></button></div>
 </div>
 <div class="song-toolbar">
 <div class="toolbar-row">
@@ -355,7 +355,23 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 <button id="side-prev" class="side-nav-btn side-nav-left" onclick="prevSong()">‹</button>
 <button id="side-next" class="side-nav-btn side-nav-right" onclick="nextSong()">›</button>
 </div>
-<div id="modal-song-edit" class="modal"><div class="modal-content"><h2 id="modal-song-edit-title">Редактор песни</h2><div class="help-box"><b>Формат:</b><br>• Аккорды: <b>G C D Hm</b> (H вместо B!)<br>• Аккорды с басом: <b>C#/F G/B</b><br>• Аккорды + текст: <b>G C D Текст песни</b><br>• Метки в скобках: <b>E (бросить) H (ALL IN)</b><br>• Заметка справа: <b>G C D *повторить</b><br>• Комментарий строки: <b>G C D Текст **</b><br>• <b>Ссылки:</b> <code>https://...</code> (на отдельной строке)<br>• Заголовки: <b>ПРИПЕВ:</b> <b>1 КУПЛЕТ:</b> <b>БРИДЖ:</b> и т.д.<br>• Картинка: <b>Картинка:</b> (отдельной строкой)<br>• Такты: <b>| F#m / A | E/G# |</b></div><label style="font-weight: bold; margin-bottom: 5px; display: block;">Название <span class="required-star">*</span></label><input type="text" id="edit-title" placeholder="Название песни" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><label style="font-weight: bold; margin-bottom: 5px; display: block;">Автор (необязательно)</label><div style="position: relative;"><input type="text" id="edit-author" placeholder="Автор" oninput="showAuthorSuggestions()" onblur="setTimeout(() => hideAuthorSuggestions(), 200)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><div id="author-suggestions" class="author-suggestions" style="display: none;"></div></div><label style="font-weight: bold; margin-bottom: 5px; display: block;">Тональность <span class="required-star">*</span></label><select id="edit-key"><option value="">-- Выберите тональность --</option><option value="C">C (До)</option><option value="C#">C# / Db</option><option value="D">D (Ре)</option><option value="D#">D# / Eb</option><option value="E">E (Ми)</option><option value="F">F (Фа)</option><option value="F#">F# / Gb</option><option value="G">G (Соль)</option><option value="G#">G# / Ab</option><option value="A">A (Ля)</option><option value="A#">A# / Bb</option><option value="H">H (Си)</option></select><label style="font-weight: bold; margin-bottom: 5px; display: block;">BPM (необязательно)</label><input type="number" id="edit-bpm" placeholder="Например: 120" min="42" max="500" autocomplete="off"><label style="font-weight: bold; margin-bottom: 5px; display: block;">Категория (необязательно)</label><select id="edit-category"><option value="">Не указана</option><option value="fast"> Быстрая</option><option value="medium">🎵 Средняя</option><option value="slow">🧎 Медленная</option></select><label style="font-weight: bold; margin-bottom: 5px; display: block;">Текст песни <span class="required-star">*</span></label><textarea id="edit-text" placeholder="G C D&#10;Текст песни" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-song-edit')">Отмена</button><button class="btn-main" style="width: auto; margin:0;" onclick="saveSong()">Сохранить</button></div></div></div>
+<div id="page-song-edit" class="page">
+<div class="header">
+<div class="header-left"><button class="btn-back" onclick="goBackFromSongEdit()">←</button></div>
+<div class="header-center"><h1 class="app-title">Worship SetUP</h1><div class="app-subtitle" id="song-edit-title">Редактор песни</div></div>
+<div class="header-right"><button class="theme-toggle" onclick="toggleTheme()">🌙</button></div>
+</div>
+<div style="max-width: 600px; margin: 0 auto;">
+<div class="help-box"><b>Формат:</b><br>• Аккорды: <b>G C D Hm</b> (H вместо B!)<br>• Аккорды с басом: <b>C#/F G/B</b><br>• Аккорды + текст: <b>G C D Текст песни</b><br>• Метки в скобках: <b>E (бросить) H (ALL IN)</b><br>• Заметка справа: <b>G C D *повторить</b><br>• Комментарий строки: <b>G C D Текст **</b><br>• <b>Ссылки:</b> <code>https://...</code> (на отдельной строке)<br>• Заголовки: <b>ПРИПЕВ:</b> <b>1 КУПЛЕТ:</b> <b>БРИДЖ:</b> и т.д.<br>• Картинка: <b>Картинка:</b> (отдельной строкой)<br>• Такты: <b>| F#m / A | E/G# |</b></div>
+<label style="font-weight: bold; margin-bottom: 5px; display: block;">Название <span class="required-star">*</span></label><input type="text" id="edit-title" placeholder="Название песни" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+<label style="font-weight: bold; margin-bottom: 5px; display: block;">Автор (необязательно)</label><div style="position: relative;"><input type="text" id="edit-author" placeholder="Автор" oninput="showAuthorSuggestions()" onblur="setTimeout(() => hideAuthorSuggestions(), 200)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><div id="author-suggestions" class="author-suggestions" style="display: none;"></div></div>
+<label style="font-weight: bold; margin-bottom: 5px; display: block;">Тональность <span class="required-star">*</span></label><select id="edit-key"><option value="">-- Выберите тональность --</option><option value="C">C (До)</option><option value="C#">C# / Db</option><option value="D">D (Ре)</option><option value="D#">D# / Eb</option><option value="E">E (Ми)</option><option value="F">F (Фа)</option><option value="F#">F# / Gb</option><option value="G">G (Соль)</option><option value="G#">G# / Ab</option><option value="A">A (Ля)</option><option value="A#">A# / Bb</option><option value="H">H (Си)</option></select>
+<label style="font-weight: bold; margin-bottom: 5px; display: block;">BPM (необязательно)</label><input type="number" id="edit-bpm" placeholder="Например: 120" min="42" max="500" autocomplete="off">
+<label style="font-weight: bold; margin-bottom: 5px; display: block;">Категория (необязательно)</label><select id="edit-category"><option value="">Не указана</option><option value="fast"> Быстрая</option><option value="medium">🎵 Средняя</option><option value="slow">🧎 Медленная</option></select>
+<label style="font-weight: bold; margin-bottom: 5px; display: block;">Текст песни <span class="required-star">*</span></label><textarea id="edit-text" placeholder="G C D&#10;Текст песни" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
+<div class="modal-actions"><button class="btn-secondary" onclick="goBackFromSongEdit()">Отмена</button><button class="btn-main" style="width: auto; margin:0;" onclick="saveSong()">Сохранить</button></div>
+</div>
+</div>
 <div id="modal-express-add" class="modal"><div class="modal-content">
 <h2>⚡ Экспресс-добавление песни</h2>
 <div class="help-box"><b>Формат:</b><br>• <b>1-я строка</b> — название песни (можно с BPM в конце: <code>Название 120</code>)<br>• <b>Метаданные</b> (следующими строками, в любом порядке):<br>&nbsp;&nbsp;<code>Автор: VL worship</code><br>&nbsp;&nbsp;<code>Тональность: C</code><br>&nbsp;&nbsp;<code>BPM: 120</code> или <code>BPM 120</code> или <code>Темп: 120</code><br>&nbsp;&nbsp;<code>Категория: быстрая</code> (или <code>средняя</code>, <code>медленная</code>)<br>• <b>Остальные строки</b> — аккорды и текст<br>• Если тональность не указана — определится автоматически<br>• Диапазон BPM: 42–500</div>
@@ -455,7 +471,7 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 <div style="display:flex;padding:8px 10px;border-top:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.15);">
 <div style="position:relative;flex:1;background:#1e1e1e;border-radius:20px;display:flex;align-items:flex-end;">
 <textarea id="chat-input" rows="1" placeholder="Сообщение" style="flex:1;resize:none;background:transparent;border:none;outline:none;color:#eee;padding:9px 44px 9px 14px;font-family:inherit;font-size:15px;line-height:1.3;height:38px;max-height:98px;overflow-y:hidden;box-sizing:border-box;" onkeydown="handleChatInputKeydown(event)" oninput="autoGrowChatInput(this)"></textarea>
-<button style="position:absolute;right:4px;bottom:4px;width:32px;height:32px;border-radius:50%;padding:0;border:none;background:#42a5f5;color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;" onclick="sendOrEditChatMessage()">➤</button>
+<button style="width:38px;height:38px;margin:0;border-radius:50%;padding:0;flex-shrink:0;border:none;background:#42a5f5;color:#fff;font-size:16px;display:flex;align-items:center;justify-content:center;" onclick="withButtonSpinner(this, () => sendOrEditChatMessage())">➤</button>
 </div>
 </div>
   

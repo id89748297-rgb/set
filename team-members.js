@@ -206,6 +206,7 @@ function clearMembersSearchOnOutsideClick(e) {
     if (searchInput.value) { searchInput.value = ''; renderTeamMembersList(); }
 }
 function renderTeamMembersList() {
+    cancelRolePress();
     const team = teams.find(t => t.id === currentMembersTeamId);
     const list = document.getElementById('team-members-list');
     if (!team) { list.innerHTML = ''; return; }

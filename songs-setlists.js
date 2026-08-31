@@ -124,10 +124,18 @@ function openMainSongEditor(id = null) { currentSongId = id; openSongEditor(id, 
 function openSongEditor(id = null, isFromSetlist = false) {
 currentSongId = id; isLocalEdit = isFromSetlist;
 let title = '', chordpro = '', key = '', author = '', bpm = '', category = '';
-if (id === null && !isFromSetlist) { isLocalEdit = false; document.getElementById('modal-song-edit-title').innerText = '➕ Новая песня'; document.getElementById('edit-title').value = ''; document.getElementById('edit-author').value = ''; document.getElementById('edit-bpm').value = ''; document.getElementById('edit-category').value = ''; document.getElementById('edit-text').value = ''; document.getElementById('edit-key').value = ''; document.getElementById('modal-song-edit').classList.add('show'); return; }
-if (isFromSetlist && currentSlId && id) { const s = songs.find(x => x.id === id); const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === id); title = s.title; key = s.key || ''; author = s.author || ''; bpm = s.bpm || ''; category = s.category || ''; if (item && item.chordpro) { chordpro = item.chordpro; document.getElementById('modal-song-edit-title').innerText = '✏️ Локальное редактирование'; } else { chordpro = s.chordpro; document.getElementById('modal-song-edit-title').innerText = '✏️ Создать локальную версию'; } }
-else if (id) { const s = songs.find(x => x.id === id); if (s) { title = s.title; chordpro = s.chordpro; key = s.key || ''; author = s.author || ''; bpm = s.bpm || ''; category = s.category || ''; } isLocalEdit = false; document.getElementById('modal-song-edit-title').innerText = '✏️ Глобальное редактирование'; }
-document.getElementById('edit-title').value = title; document.getElementById('edit-author').value = author; document.getElementById('edit-bpm').value = bpm; document.getElementById('edit-category').value = category; document.getElementById('edit-text').value = chordpro; document.getElementById('edit-key').value = key; document.getElementById('modal-song-edit').classList.add('show');
+if (id === null && !isFromSetlist) { isLocalEdit = false; document.getElementById('song-edit-title').innerText = '➕ Новая песня'; document.getElementById('edit-title').value = ''; document.getElementById('edit-author').value = ''; document.getElementById('edit-bpm').value = ''; document.getElementById('edit-category').value = ''; document.getElementById('edit-text').value = ''; document.getElementById('edit-key').value = ''; showPage('page-song-edit'); return; }
+if (isFromSetlist && currentSlId && id) { const s = songs.find(x => x.id === id); const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === id); title = s.title; key = s.key || ''; author = s.author || ''; bpm = s.bpm || ''; category = s.category || ''; if (item && item.chordpro) { chordpro = item.chordpro; document.getElementById('song-edit-title').innerText = '✏️ Локальное редактирование'; } else { chordpro = s.chordpro; document.getElementById('song-edit-title').innerText = '✏️ Создать локальную версию'; } }
+else if (id) { const s = songs.find(x => x.id === id); if (s) { title = s.title; chordpro = s.chordpro; key = s.key || ''; author = s.author || ''; bpm = s.bpm || ''; category = s.category || ''; } isLocalEdit = false; document.getElementById('song-edit-title').innerText = '✏️ Глобальное редактирование'; }
+document.getElementById('edit-title').value = title; document.getElementById('edit-author').value = author; document.getElementById('edit-bpm').value = bpm; document.getElementById('edit-category').value = category; document.getElementById('edit-text').value = chordpro; document.getElementById('edit-key').value = key; showPage('page-song-edit');
+}
+function goBackFromSongEdit() {
+if (isLocalEdit && currentSlId) {
+showPage('page-setlist-detail');
+} else {
+showPage('page-home');
+if (currentHomeView !== 'songs') { const idx = carouselItems.findIndex(i => i.type === 'songs'); if (idx !== -1) setCarouselIndex(idx, true); }
+}
 }
 function saveSong() {
 const title = document.getElementById('edit-title').value.trim(); const author = document.getElementById('edit-author').value.trim(); const bpm = document.getElementById('edit-bpm').value.trim(); const category = document.getElementById('edit-category').value; const chordpro = document.getElementById('edit-text').value; const key = document.getElementById('edit-key').value;
@@ -144,7 +152,7 @@ song.bpm = bpm;
 song.category = category;
 song.updatedAt = Date.now();
 } else { songs.push({id: getNextId(songs), title, chordpro, key, author, bpm, category, cloudId: generateCloudId(), createdAt: Date.now(), columns: currentColumns, fontSize}); } saveToStorage(); alert('✅ Песня сохранена!'); }
-closeModal('modal-song-edit'); currentSongId = null; const searchBox = document.getElementById('songs-search'); if (searchBox) searchBox.value = ''; renderSongs();
+goBackFromSongEdit(); currentSongId = null; const searchBox = document.getElementById('songs-search'); if (searchBox) searchBox.value = ''; renderSongs();
 }
 function switchTab(tab, el) { currentTab = tab; document.querySelectorAll('#home-view-setlists .tab-style').forEach(t => t.classList.remove('active')); el.classList.add('active'); renderSetlists(); saveAppState(); }
 function clearSetlistSearchAndOpen(slId) {

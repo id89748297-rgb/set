@@ -122,7 +122,23 @@ startChatListener(teamId);
 startChatReadsListener(teamId);
 markChatRead(teamId);
 setupModalSwipeClose('modal-team-chat', closeTeamChat);
+setupChatKeyboardHandling();
 setTimeout(() => scrollChatToBottom(), 50);
+}
+function setupChatKeyboardHandling() {
+if (!window.visualViewport || window.__chatKeyboardHandlerBound) return;
+window.__chatKeyboardHandlerBound = true;
+const modal = document.getElementById('modal-team-chat');
+window.visualViewport.addEventListener('resize', adjustChatForKeyboard);
+window.visualViewport.addEventListener('scroll', adjustChatForKeyboard);
+}
+function adjustChatForKeyboard() {
+const modal = document.getElementById('modal-team-chat');
+if (!modal || !modal.classList.contains('show') || !window.visualViewport) return;
+const vv = window.visualViewport;
+modal.style.setProperty('height', vv.height + 'px', 'important');
+modal.style.setProperty('top', vv.offsetTop + 'px', 'important');
+scrollChatToBottom();
 }
 function autoGrowChatInput(el) {
 el.style.setProperty('height', 'auto', 'important');
@@ -131,7 +147,10 @@ el.style.setProperty('height', Math.max(newHeight, 38) + 'px', 'important');
 el.style.overflowY = el.scrollHeight > 98 ? 'auto' : 'hidden';
 }
 function closeTeamChat() {
-document.getElementById('modal-team-chat').classList.remove('show');
+const modal = document.getElementById('modal-team-chat');
+modal.classList.remove('show');
+modal.style.removeProperty('height');
+modal.style.removeProperty('top');
 currentChatTeamId = null;
 chatEditingMessageId = null;
 }
