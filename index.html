@@ -37,7 +37,7 @@
 <div class="app-subtitle">авторизация</div>
 </div>
 <div class="header-right">
-<button class="btn-refresh-round" onclick="refreshPage(this)" title="Обновить">↻</button>
+<button class="btn-refresh-round btn-refresh-back-color" onclick="refreshPage(this)" title="Обновить">↻</button>
 <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙</button>
 </div>
 </div>
@@ -304,7 +304,9 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 <h1 id="song-view-title" class="song-title-main">Песня</h1>
 <div id="song-view-links" class="song-view-links"></div>
 </div>
-<div class="header-right"><button class="btn-refresh-round" onclick="refreshPage(this)" title="Обновить" style="background:###448aff;color:#fff;">↻</button><button class="theme-toggle" onclick="toggleTheme()"></button></div>
+<div class="header-right">
+<button class="btn-refresh-round btn-refresh-back-color" onclick="refreshPage(this)" title="Обновить">↻</button>
+<button class="theme-toggle" onclick="toggleTheme()"></button></div>
 </div>
 <div class="song-toolbar">
 <div class="toolbar-row">
@@ -476,7 +478,7 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 </div>
   
 <!-- === МОДАЛКА: ПРОФИЛЬ УЧАСТНИКА === -->
-<div id="modal-member-profile" class="modal" style="z-index: 1100;">
+<div id="modal-member-profile" class="modal" style="z-index: 2100;">
 <div class="modal-content" style="text-align:center;">
 <div id="member-profile-avatar" class="member-profile-avatar">👤</div>
 <h2 id="member-profile-name" style="margin:10px 0 15px;"></h2>
@@ -486,7 +488,7 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 </div>
  
 <!-- === МОДАЛКА: ФОТО НА ВЕСЬ ЭКРАН === -->
-<div id="modal-photo-view" class="modal" style="z-index: 1200;background:rgba(0,0,0,0.95);" onclick="closeModal('modal-photo-view')">
+<div id="modal-photo-view" class="modal" style="z-index: 2200;background:rgba(0,0,0,0.95);" onclick="closeModal('modal-photo-view')">
 <img id="photo-view-img" src="" alt="" style="max-width:95vw;max-height:95vh;object-fit:contain;border-radius:8px;">
 </div>
 <script src="auth.js"></script>

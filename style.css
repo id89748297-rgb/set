@@ -613,3 +613,5 @@ color: #fff !important;
 .btn-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: btn-spin 0.7s linear
 infinite; vertical-align: middle; }
 @keyframes btn-spin { to { transform: rotate(360deg); } }
+.btn-refresh-back-color { background: #78909c !important; color: #fff !important; }
+body.light .btn-refresh-back-color, body.dark-white .btn-refresh-back-color { background: #455a64 !important; color: #fff !important; }

@@ -24,9 +24,12 @@ localStorage.setItem('clc_current_uid', user.uid);
 console.log('✅ Авторизован:', user.email);
 if (profileBtn) profileBtn.style.display = 'flex';
 
-        // ✅ СНАЧАЛА ПОКАЗЫВАЕМ ГЛАВНЮ С ЛОКАЛЬНЫМИ ДАННЫМИ (мгновенно!)
-        showPage('page-home');
-        loadUserAvatar();
+       // ✅ СНАЧАЛА ПОКАЗЫВАЕМ ГЛАВНЮ С ЛОКАЛЬНЫМИ ДАННЫМИ (мгновенно!) — но не перебиваем уже восстановленную страницу песни/сет-листа
+        const __savedStateForAuth = JSON.parse(localStorage.getItem('clc_state') || '{}');
+        if (__savedStateForAuth.page !== 'page-song-view' && __savedStateForAuth.page !== 'page-setlist-detail') {
+            showPage('page-home');
+        }
+        loadUserAvatar();
 
         // ✅ ЗАГРУЖАЕМ ОБЛАЧНЫЕ ДАННЫЕ В ФОНЕ (не блокируя UI)
         showToast('↻ Синхронизация данных...', 'info');

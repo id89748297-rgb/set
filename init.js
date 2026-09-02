@@ -1,6 +1,6 @@
 // === ИНИЦИАЛИЗАЦИЯ ===
 const lastBackup = parseInt(localStorage.getItem('clc_last_backup') || '0');
-if (Date.now() - lastBackup > 30 * 24 * 60 * 60 * 1000) {
+if (Date.now() - lastBackup > 365 * 24 * 60 * 60 * 1000) {
 setTimeout(() => showToast('💾 Давно не делали резервную копию — сохраните базу в настройках', 'info'), 2000);
 }
 loadFromStorage();
@@ -114,16 +114,17 @@ function refreshPage(btnEl) {
 
 // === TOAST-УВЕДОМЛЕНИЯ ===
 function showToast(message, type = 'error') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    const toast = document.createElement('div');
-    toast.className = 'toast ' + type;
-    toast.innerHTML = `<span>${message}</span>`;
-    container.appendChild(toast);
-    // Автоудаление через 3 секунды
-    setTimeout(() => {
-        if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 3000);
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    container.innerHTML = '';
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    toast.innerHTML = `<span>${message}</span>`;
+    container.appendChild(toast);
+    // Автоудаление через 3 секунды
+    setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 3000);
 }
 
 // === СЛУШАТЕЛИ СОСТОЯНИЯ СЕТИ ===

@@ -58,6 +58,10 @@ async function ensureTeamMemberships() {
 }
  
 function openTeamMembers(teamId) {
+    closeRoleMenu();
+    if (typeof closeChatMsgMenuPopup === 'function') closeChatMsgMenuPopup();
+    if (typeof closeClearChatMenuPopup === 'function') closeClearChatMenuPopup();
+    if (typeof closeTeamPinMenu === 'function') closeTeamPinMenu();
     applyFullscreenModalStyle('modal-team-members');
     const team = teams.find(t => t.id === teamId);
     if (!team) return;
@@ -241,8 +245,7 @@ function renderTeamMembersList() {
         const canKick = !isMe && targetRole !== 'owner' && (iAmOwner || (iAmAdmin && targetRole !== 'admin'));
         const kickBtn = canKick ? `<button class="btn-icon" onclick="event.stopPropagation();kickTeamMember('${r.uid}')" title="Удалить">🗑️</button>` : '';
         const canChangeRole = iAmOwner && !isMe;
-        const pressAttrs = canChangeRole ? `ontouchstart="startRolePress(event,'${r.uid}')" ontouchend="cancelRolePress()" ontouchcancel="cancelRolePress()" onmousedown="startRolePress(event,'${r.uid}')" onmouseup="cancelRolePress()" onmouseleave="cancelRolePress()"` : '';
-        return `<div class="list-item" style="cursor:pointer;" ${pressAttrs} onclick="if(window.__rolePressFired){window.__rolePressFired=false;return;} openMemberProfile('${r.uid}')">
+        return `<div class="list-item" data-member-uid="${r.uid}" data-can-change-role="${canChangeRole}" style="cursor:pointer;">
 <div class="item-left">
 ${avatarHtml}
 <div style="min-width:0;flex:1;">
@@ -253,6 +256,35 @@ ${kickBtn}
 </div>
 </div>`;
     }).join('');
+    list.querySelectorAll('[data-member-uid]').forEach(el => {
+        initMemberRowGesture(el, el.dataset.memberUid, el.dataset.canChangeRole === 'true');
+    });
+}
+function initMemberRowGesture(el, uid, canChangeRole) {
+    let startX = 0, startY = 0, moved = false, longPressTimer = null, longPressFired = false;
+    function onStart(x, y) {
+        startX = x; startY = y; moved = false; longPressFired = false;
+        clearTimeout(longPressTimer);
+        if (canChangeRole) {
+            longPressTimer = setTimeout(() => {
+                if (!moved) { longPressFired = true; if (navigator.vibrate) navigator.vibrate(30); openRoleMenu(uid, startX, startY); }
+            }, 500);
+        }
+    }
+    function onMove(x, y) {
+        if (Math.abs(x - startX) > 10 || Math.abs(y - startY) > 10) { moved = true; clearTimeout(longPressTimer); }
+    }
+    function onEnd() {
+        clearTimeout(longPressTimer);
+        if (longPressFired || moved) return;
+        openMemberProfile(uid);
+    }
+    el.addEventListener('touchstart', (e) => onStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    el.addEventListener('touchmove', (e) => onMove(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    el.addEventListener('touchend', onEnd, { passive: true });
+    el.addEventListener('mousedown', (e) => onStart(e.clientX, e.clientY));
+    el.addEventListener('mousemove', (e) => { if (e.buttons === 1) onMove(e.clientX, e.clientY); });
+    el.addEventListener('mouseup', onEnd);
 }
  
 function formatBirthDateForProfile(dateString) {
