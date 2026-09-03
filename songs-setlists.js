@@ -31,7 +31,7 @@ if (savedColor === 'violet') document.body.classList.add('violet'); else documen
 currentHideArrows = localStorage.getItem('clc_hide_arrows') === 'true';
 currentHideComments = localStorage.getItem('clc_hide_comments') === 'true';
 const savedState = JSON.parse(localStorage.getItem('clc_state') || '{}');
-if (savedState.page === 'page-song-view' && savedState.songId) { currentSongId = savedState.songId; currentSlId = savedState.slId || null; showPage('page-song-view'); openSongView(savedState.songId, savedState.slId); }
+if (savedState.page === 'page-song-view' && savedState.songId) { currentSongId = savedState.songId; currentSlId = savedState.slId || null; if (savedState.slId) { openSetlistDetail(savedState.slId); } showPage('page-song-view'); openSongView(savedState.songId, savedState.slId); }
 else if (savedState.page === 'page-setlist-detail' && savedState.slId) { currentSlId = savedState.slId; showPage('page-setlist-detail'); openSetlistDetail(savedState.slId); }
 const savedDefaults = JSON.parse(localStorage.getItem('clc_defaults') || '{}');
 if (savedDefaults.fontSize) fontSize = savedDefaults.fontSize;
