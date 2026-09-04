@@ -243,10 +243,10 @@ body.dark-white .inline-cancel-btn { background: #78909c; color: white; }
 .modal-content { background: #1e1e1e; color: #eee; padding: 25px; border-radius: 15px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: auto; }
 body.light .modal-content { background: white; color: #333; }
 body.dark-white .modal-content { background: #1e1e1e; color: #eee; }
-.modal input, .modal textarea, .modal select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #444; background: #2a2a2a; color: #eee; font-size: 16px; min-height: 48px; touch-action: auto; -webkit-autocapitalize: off; autocapitalize: off; autocorrect: off; spellcheck: false; }
-body.light .modal input, body.light .modal textarea, body.light .modal select { background: #f9f9f9; color: #333; border: 1px solid #ddd; }
-body.dark-white .modal input, body.dark-white .modal textarea, body.dark-white .modal select { background: #2a2a2a; color: #eee; border: 1px solid #444; }
-.modal textarea { min-height: 300px; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 14px; line-height: 1.4; }
+.modal input, .modal textarea, .modal select, #page-song-edit input, #page-song-edit textarea, #page-song-edit select { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #444; background: #2a2a2a; color: #eee; font-size: 16px; min-height: 48px; touch-action: auto; -webkit-autocapitalize: off; autocapitalize: off; autocorrect: off; spellcheck: false; }
+body.light .modal input, body.light .modal textarea, body.light .modal select, body.light #page-song-edit input, body.light #page-song-edit textarea, body.light #page-song-edit select { background: #f9f9f9; color: #333; border: 1px solid #ddd; }
+body.dark-white .modal input, body.dark-white .modal textarea, body.dark-white .modal select, body.dark-white #page-song-edit input, body.dark-white #page-song-edit textarea, body.dark-white #page-song-edit select { background: #2a2a2a; color: #eee; border: 1px solid #444; }
+.modal textarea, #page-song-edit textarea { min-height: 300px; font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-size: 14px; line-height: 1.4; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
 .btn-danger { background: #ef5350; color: white; border: none; padding: 12px 18px; border-radius: 10px; cursor: pointer; min-height: 48px; touch-action: manipulation; }
 body.light .btn-danger { background: #e57373; color: #333; }
@@ -615,3 +615,4 @@ infinite; vertical-align: middle; }
 @keyframes btn-spin { to { transform: rotate(360deg); } }
 .btn-refresh-back-color { background: #78909c !important; color: #fff !important; }
 body.light .btn-refresh-back-color, body.dark-white .btn-refresh-back-color { background: #455a64 !important; color: #fff !important; }
+#chat-messages-list, #team-members-list { overscroll-behavior: contain; }

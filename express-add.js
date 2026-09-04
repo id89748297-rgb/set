@@ -44,6 +44,7 @@ if (diffX < 0) goBackFromSong();
 }
 else if (currentPageId === 'page-setlist-detail' && diffX < 0) goBackFromSetlistDetail();
 else if (currentPageId === 'page-song-edit' && diffX < 0) goBackFromSongEdit();
+else if (currentPageId === 'page-profile' && diffX < 0) goBackFromProfile();
 else if (currentPageId === 'page-instruction' && diffX > 0) showInstruction(false);
 }
 }, { passive: true });

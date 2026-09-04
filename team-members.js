@@ -63,6 +63,7 @@ function openTeamMembers(teamId) {
     if (typeof closeClearChatMenuPopup === 'function') closeClearChatMenuPopup();
     if (typeof closeTeamPinMenu === 'function') closeTeamPinMenu();
     applyFullscreenModalStyle('modal-team-members');
+lockBodyScroll();
     const team = teams.find(t => t.id === teamId);
     if (!team) return;
     currentMembersTeamId = teamId;
@@ -115,6 +116,7 @@ function closeTeamMembers() {
     closeModal('modal-team-members');
     currentMembersTeamId = null;
     currentMembersProfiles = {};
+unlockBodyScroll();
     saveAppState();
 }
 async function changeTeamMemberRole(uid, newRole) {
@@ -279,12 +281,17 @@ function initMemberRowGesture(el, uid, canChangeRole) {
         if (longPressFired || moved) return;
         openMemberProfile(uid);
     }
+el.addEventListener('click', (e) => {
+    if (e.target.closest('button')) return;
+    openMemberProfile(uid);
+});
     el.addEventListener('touchstart', (e) => onStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
     el.addEventListener('touchmove', (e) => onMove(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
     el.addEventListener('touchend', onEnd, { passive: true });
     el.addEventListener('mousedown', (e) => onStart(e.clientX, e.clientY));
     el.addEventListener('mousemove', (e) => { if (e.buttons === 1) onMove(e.clientX, e.clientY); });
     el.addEventListener('mouseup', onEnd);
+    el.addEventListener('click', (e) => { if (!e.target.closest('button')) openMemberProfile(uid); });
 }
  
 function formatBirthDateForProfile(dateString) {
@@ -329,10 +336,16 @@ function openMemberProfile(uid) {
             `<div class="member-profile-row"><span class="member-profile-label">${f[0]}</span><span class="member-profile-value">${escapeHtml(String(f[1]))}</span></div>`
         ).join('');
     }
-    document.getElementById('modal-member-profile').classList.add('show');
+    const profileModal = document.getElementById('modal-member-profile');
+    if (profileModal.parentElement !== document.body) document.body.appendChild(profileModal);
+    profileModal.style.zIndex = '99999';
+    profileModal.classList.add('show');
 }
  
 function openMemberPhotoFull(src) {
     document.getElementById('photo-view-img').src = src;
-    document.getElementById('modal-photo-view').classList.add('show');
+    const photoModal = document.getElementById('modal-photo-view');
+    if (photoModal.parentElement !== document.body) document.body.appendChild(photoModal);
+    photoModal.style.zIndex = '99999';
+    photoModal.classList.add('show');
 }

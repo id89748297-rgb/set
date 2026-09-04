@@ -61,6 +61,22 @@ ${leaveOrDeleteBtn}
 html += `</div>`;
 view.innerHTML = html;
 }
+function lockBodyScroll() {
+window.__bodyScrollY = window.scrollY || window.pageYOffset || 0;
+document.body.style.position = 'fixed';
+document.body.style.top = '-' + window.__bodyScrollY + 'px';
+document.body.style.left = '0';
+document.body.style.right = '0';
+document.body.style.width = '100%';
+}
+function unlockBodyScroll() {
+document.body.style.position = '';
+document.body.style.top = '';
+document.body.style.left = '';
+document.body.style.right = '';
+document.body.style.width = '';
+window.scrollTo(0, window.__bodyScrollY || 0);
+}
 function applyFullscreenModalStyle(modalId) {
 const modal = document.getElementById(modalId);
 if (!modal) return;
@@ -88,7 +104,8 @@ if (dx > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) closeFn();
 }, { passive: true });
 }
 function openTeamChat(teamId) {
-applyFullscreenModalStyle('modal-team-chat');;
+applyFullscreenModalStyle('modal-team-chat');
+lockBodyScroll();
 const team = teams.find(t => t.id === teamId);
 if (!team) return;
 currentChatTeamId = teamId;
@@ -153,6 +170,7 @@ modal.style.removeProperty('height');
 modal.style.removeProperty('top');
 currentChatTeamId = null;
 chatEditingMessageId = null;
+unlockBodyScroll();
 }
 function scrollChatToBottom() {
 const list = document.getElementById('chat-messages-list');
