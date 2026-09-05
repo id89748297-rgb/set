@@ -35,8 +35,7 @@ if (diffX > 0) {
 if (homeSongIndex === homeFilteredSongs.length - 1) goBackFromSong();
 else { homeSongIndex++; openSongView(homeFilteredSongs[homeSongIndex].id, null); }
 } else {
-if (homeSongIndex === 0) goBackFromSong();
-else { homeSongIndex--; openSongView(homeFilteredSongs[homeSongIndex].id, null); }
+goBackFromSong();
 }
 } else {
 if (diffX < 0) goBackFromSong();

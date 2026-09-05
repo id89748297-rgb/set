@@ -426,8 +426,8 @@ body.dark-white .profile-info-card { background: #1e1e1e; }
 .profile-info-row:last-child { border-bottom: none; }
 body.light .profile-info-row { border-bottom-color: #eee; }
 .profile-label { font-weight: bold; color: #888; font-size: 14px; flex-shrink: 0; }
-.profile-value { color: #90caf9; font-size: 14px; text-align: right; word-break: break-all; }
-body.light .profile-value { color: #0d47a1; }
+.profile-value { color: #fff; font-size: 14px; text-align: right; word-break: break-all; }
+body.light .profile-value { color: #000; }
 .profile-actions { display: flex; flex-direction: column; gap: 12px; }
 .profile-edit-input {
 transition: border-color 0.2s;
@@ -617,3 +617,5 @@ infinite; vertical-align: middle; }
 body.light .btn-refresh-back-color, body.dark-white .btn-refresh-back-color { background: #455a64 !important; color: #fff !important; }
 #chat-messages-list, #team-members-list { overscroll-behavior: contain; }
 #page-team-chat.active { display: flex !important; flex-direction: column; height: 100dvh; padding: 0; padding-top: env(safe-area-inset-top); }
+#modal-section-edit .btn-main { background: rgba(129, 212, 250, 0.5) !important; color: #fff !important; }
+#page-song-edit .btn-main, #modal-express-add .btn-main { background: rgba(129, 212, 250, 0.5) !important; color: #fff !important; }

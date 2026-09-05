@@ -17,6 +17,7 @@ async function syncPublicProfileToTeams() {
        const publicProfile = {
     displayName: data.displayName || currentUser.displayName || '',
     lastName: data.lastName || '',
+    email: currentUser.email || '',
     gender: data.gender || '',
     birthDate: data.birthDate || '',
     country: data.country || '',
@@ -312,6 +313,8 @@ function openMemberProfile(uid) {
     const p = currentMembersProfiles[uid] || {};
     const fullName = [p.displayName, p.lastName].filter(Boolean).join(' ').trim() || 'Без имени';
     document.getElementById('member-profile-name').innerText = fullName;
+const emailEl = document.getElementById('member-profile-email');
+if (emailEl) emailEl.innerText = p.email || '';
     const avatarEl = document.getElementById('member-profile-avatar');
     if (p.avatar) {
         const safeSrc = p.avatar.replace(/'/g, "\\'");
