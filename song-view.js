@@ -93,11 +93,12 @@ currentSongId = id; currentSlId = slId; isInlineEditing = false;
 document.getElementById('inline-edit-container').style.display = 'none'; document.getElementById('song-view-content').style.display = 'block'; document.querySelector('.song-toolbar').style.display = 'block';
 const s = songs.find(x => x.id === id); if (!s) return;
 const songUrls = extractUrlsFromChordpro(s.chordpro);
-let titleText = s.title; if (s.key) titleText += ` [${s.key}]`; if (s.bpm) titleText += ` - ${s.bpm} BPM`;
-document.getElementById('song-view-title').innerText = titleText;
-renderSongLinks(songUrls);
+document.getElementById('song-view-title').innerText = s.title;
+document.getElementById('song-view-bpm').innerText = s.bpm ? (s.bpm + ' BPM') : '';
+document.getElementById('song-view-links').innerHTML = songUrls.map(u => `<a href="${escapeHtml(u)}" target="_blank" rel="noopener" class="song-link">Ссылка</a>`).join('');
+document.getElementById('song-view-links').style.display = songUrls.length ? 'block' : 'none';
 const setlistNameEl = document.getElementById('song-view-setlist-name');
-if (slId) { const sl = setlists.find(x => x.id === slId); setlistNameEl.innerText = `📋 ${sl.name} (${formatSetlistDate(sl.date, sl.time)})`; setlistNameEl.style.display = 'block'; } else { setlistNameEl.style.display = 'none'; }
+if (slId) { const sl = setlists.find(x => x.id === slId); setlistNameEl.innerText = sl.name; setlistNameEl.style.display = 'block'; } else { setlistNameEl.style.display = 'none'; }
 originalKey = s.key || 'C'; currentCapo = 0;
 const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 769px)').matches;
 currentColumns = isDesktop ? 2 : (s.columns || 1);
