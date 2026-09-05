@@ -104,8 +104,6 @@ if (dx > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) closeFn();
 }, { passive: true });
 }
 function openTeamChat(teamId) {
-applyFullscreenModalStyle('modal-team-chat');
-lockBodyScroll();
 const team = teams.find(t => t.id === teamId);
 if (!team) return;
 currentChatTeamId = teamId;
@@ -113,7 +111,7 @@ chatEditingMessageId = null;
 document.getElementById('chat-team-name').innerText = team.name;
 document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src="${team.avatar}" alt="">` : '🎸';
 document.getElementById('chat-input').value = '';
-document.getElementById('modal-team-chat').classList.add('show');
+showPage('page-team-chat');
 if (!chatMessagesCache[teamId]) chatMessagesCache[teamId] = [];
 let mCache = {};
 try { mCache = JSON.parse(localStorage.getItem('clc_team_members_cache') || '{}'); } catch {}
@@ -138,19 +136,18 @@ if (currentChatTeamId === teamId) renderChatMessages(teamId);
 startChatListener(teamId);
 startChatReadsListener(teamId);
 markChatRead(teamId);
-setupModalSwipeClose('modal-team-chat', closeTeamChat);
 setupChatKeyboardHandling();
 setTimeout(() => scrollChatToBottom(), 50);
 }
 function setupChatKeyboardHandling() {
 if (!window.visualViewport || window.__chatKeyboardHandlerBound) return;
 window.__chatKeyboardHandlerBound = true;
-const modal = document.getElementById('modal-team-chat');
+const modal = document.getElementById('page-team-chat');
 window.visualViewport.addEventListener('resize', adjustChatForKeyboard);
 window.visualViewport.addEventListener('scroll', adjustChatForKeyboard);
 }
 function adjustChatForKeyboard() {
-const modal = document.getElementById('modal-team-chat');
+const modal = document.getElementById('page-team-chat');
 if (!modal || !modal.classList.contains('show') || !window.visualViewport) return;
 const vv = window.visualViewport;
 modal.style.setProperty('height', vv.height + 'px', 'important');
@@ -164,13 +161,9 @@ el.style.setProperty('height', Math.max(newHeight, 38) + 'px', 'important');
 el.style.overflowY = el.scrollHeight > 98 ? 'auto' : 'hidden';
 }
 function closeTeamChat() {
-const modal = document.getElementById('modal-team-chat');
-modal.classList.remove('show');
-modal.style.removeProperty('height');
-modal.style.removeProperty('top');
 currentChatTeamId = null;
 chatEditingMessageId = null;
-unlockBodyScroll();
+showPage('page-home');
 }
 function scrollChatToBottom() {
 const list = document.getElementById('chat-messages-list');

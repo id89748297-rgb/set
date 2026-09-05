@@ -616,3 +616,4 @@ infinite; vertical-align: middle; }
 .btn-refresh-back-color { background: #78909c !important; color: #fff !important; }
 body.light .btn-refresh-back-color, body.dark-white .btn-refresh-back-color { background: #455a64 !important; color: #fff !important; }
 #chat-messages-list, #team-members-list { overscroll-behavior: contain; }
+#page-team-chat.active { display: flex !important; flex-direction: column; height: 100dvh; padding: 0; padding-top: env(safe-area-inset-top); }
