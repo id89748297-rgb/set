@@ -88,6 +88,21 @@ window.scrollTo({ top: Math.max(0, offset), behavior: 'instant' });
 scrollToSongContent();
 }
 }
+function adjustSongHeaderAlignment() {
+requestAnimationFrame(() => {
+const titleRow = document.getElementById('song-view-title-row');
+const titleEl = document.getElementById('song-view-title');
+if (titleRow && titleEl) {
+titleRow.classList.remove('long');
+if (titleEl.scrollWidth > titleRow.clientWidth) titleRow.classList.add('long');
+}
+const setlistEl = document.getElementById('song-view-setlist-name');
+if (setlistEl && setlistEl.style.display !== 'none') {
+setlistEl.classList.remove('long');
+if (setlistEl.scrollWidth > setlistEl.clientWidth) setlistEl.classList.add('long');
+}
+});
+}
 function openSongView(id, slId, fromSwipe = false) {
 currentSongId = id; currentSlId = slId; isInlineEditing = false;
 document.getElementById('inline-edit-container').style.display = 'none'; document.getElementById('song-view-content').style.display = 'block'; document.querySelector('.song-toolbar').style.display = 'block';
@@ -99,6 +114,7 @@ document.getElementById('song-view-links').innerHTML = songUrls.map(u => `<a hre
 document.getElementById('song-view-links').style.display = songUrls.length ? 'block' : 'none';
 const setlistNameEl = document.getElementById('song-view-setlist-name');
 if (slId) { const sl = setlists.find(x => x.id === slId); setlistNameEl.innerText = sl.name; setlistNameEl.style.display = 'block'; } else { setlistNameEl.style.display = 'none'; }
+adjustSongHeaderAlignment();
 originalKey = s.key || 'C'; currentCapo = 0;
 const isDesktop = window.matchMedia('(hover: hover) and (pointer: fine) and (min-width: 769px)').matches;
 currentColumns = isDesktop ? 2 : (s.columns || 1);

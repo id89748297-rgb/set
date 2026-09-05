@@ -267,3 +267,6 @@ async function loadSessionsForProfile() {
     const snapshot = await db.collection('users').doc(currentUser.uid).collection('sessions').get();
     return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 }
+function deleteAccount() {
+confirm('⏳ Функция удаления аккаунта временно недоступна');
+}

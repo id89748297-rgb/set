@@ -1149,7 +1149,7 @@ html += `<div class="list-item ${expiredClass}" style="cursor: pointer;" onclick
 <div class="item-left" style="min-width: 0; flex: 1;">
 <div style="min-width: 0; flex: 1;">
 <div class="item-title" style="${isExpired ? 'color: #ef5350;' : ''}">${escapeHtml(sl.name)}${changesBadge}</div>
-<div class="item-sub" style="color: ${dateColor};">${formatSetlistDate(sl.date, sl.time)} · ${sl.songs.length} песен</div>
+<div style="font-size: 8px; color: ${isExpired ? '#ef5350' : '#888'}; margin-top: 2px;">${formatSetlistDate(sl.date, sl.time)} · ${sl.songs.length} песен</div>
 </div>
 </div>
 <div class="item-actions" style="display: flex; gap: 4px;">${actions}</div>
