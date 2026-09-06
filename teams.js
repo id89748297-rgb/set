@@ -113,6 +113,7 @@ document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src=
 document.getElementById('chat-input').value = '';
 showPage('page-team-chat');
 setupChatKeyboardHandling();
+lockBodyScroll();
 setTimeout(adjustChatForKeyboard, 50);
 if (!chatMessagesCache[teamId]) chatMessagesCache[teamId] = [];
 let mCache = {};
@@ -174,6 +175,7 @@ function closeTeamChat() {
 currentChatTeamId = null;
 chatEditingMessageId = null;
 showPage('page-home');
+unlockBodyScroll();
 }
 function scrollChatToBottom() {
 const list = document.getElementById('chat-messages-list');
