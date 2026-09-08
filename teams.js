@@ -113,6 +113,7 @@ document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src=
 document.getElementById('chat-input').value = '';
 showPage('page-team-chat');
 setupChatKeyboardHandling();
+setupChatFixedAreasTouchBlock();
 lockBodyScroll();
 setTimeout(adjustChatForKeyboard, 50);
 if (!chatMessagesCache[teamId]) chatMessagesCache[teamId] = [];
@@ -140,6 +141,15 @@ startChatListener(teamId);
 startChatReadsListener(teamId);
 markChatRead(teamId);
 setTimeout(() => scrollChatToBottom(), 50);
+}
+function setupChatFixedAreasTouchBlock() {
+if (window.__chatFixedTouchBound) return;
+window.__chatFixedTouchBound = true;
+const header = document.getElementById('chat-page-header');
+const inputBar = document.getElementById('chat-input-bar');
+const block = (e) => { e.preventDefault(); };
+if (header) header.addEventListener('touchmove', block, { passive: false });
+if (inputBar) inputBar.addEventListener('touchmove', block, { passive: false });
 }
 function setupChatKeyboardHandling() {
 if (!window.visualViewport || window.__chatKeyboardHandlerBound) return;
