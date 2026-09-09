@@ -366,6 +366,7 @@ const ti = Math.min(Math.max(0, newOrder - 1), sl.songs.length - 1);
 if (ci !== ti) {
 const [moved] = sl.songs.splice(ci, 1);
 sl.songs.splice(ti, 0, moved);
+sl.localUpdatedAt = Date.now();
 saveToStorage();
 syncSetlistIfTeam(sl);
 renderSlSongs();
@@ -401,6 +402,7 @@ const ti = parseInt(t.dataset.index);
 if (!isNaN(fi) && !isNaN(ti) && fi !== ti) {
 const [moved] = sl.songs.splice(fi, 1);
 sl.songs.splice(ti, 0, moved);
+sl.localUpdatedAt = Date.now();
 saveToStorage();
 syncSetlistIfTeam(sl);
 renderSlSongs();
@@ -415,6 +417,7 @@ const sl = setlists.find(x => x.id === currentSlId);
 if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
 showDeleteConfirm('remove', songId, `Песню "${songName}" из сет-листа`, () => {
 sl.songs = sl.songs.filter(x => x.id !== songId);
+sl.localUpdatedAt = Date.now();
 saveToStorage();
 syncSetlistIfTeam(sl);
 renderSlSongs();
@@ -444,6 +447,7 @@ if (filtered.length === 0) { list.innerHTML = '<p style="color: #888; text-align
 filtered.forEach(s => { const div = document.createElement('div'); div.className = 'add-song-item'; div.innerHTML = `<span>${escapeHtml(s.title)}${s.key ? ` [${s.key}]` : ''}</span><span style="color: #90caf9; font-size: 20px;">+</span>`;
 div.onclick = () => {
 sl.songs.push({id: s.id, capo: 0, key: null, chordpro: null, columns: currentColumns, fontSize});
+sl.localUpdatedAt = Date.now();
 saveToStorage();
 syncSetlistIfTeam(sl);
 document.getElementById('add-song-search').value = '';
